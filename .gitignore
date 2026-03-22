@@ -77,10 +77,4 @@ htmlcov/
 pip-wheel-metadata/
 .ipynb_checkpoints/
 
-# Copilot / agent skills
-.agents/skills/
-skills/
-.github/skills/
-.copilot/skills/
-AGENTS.md
-Agents.md
+
