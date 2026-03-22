@@ -51,3 +51,36 @@ next-env.d.ts
 .cache/
 .turbo/
 .swc/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.eggs/
+*.egg-info/
+pip-wheel-metadata/
+.ipynb_checkpoints/
+
+# Copilot / agent skills
+.agents/skills/
+skills/
+.github/skills/
+.copilot/skills/
+AGENTS.md
+Agents.md
