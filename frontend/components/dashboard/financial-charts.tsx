@@ -57,17 +57,17 @@ export function NetWorthChart() {
               <Tooltip
                 formatter={(value: number) => [`$${value.toLocaleString()}`, "Net Worth"]}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="hsl(var(--primary))"
+                stroke="var(--primary)"
                 strokeWidth={2}
-                dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
+                dot={{ fill: "var(--primary)", strokeWidth: 2 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>
@@ -112,21 +112,21 @@ export function IncomeExpenseChart() {
               <Tooltip
                 formatter={(value: number) => `$${value.toLocaleString()}`}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
               />
               <Legend />
               <Bar
                 dataKey="income"
-                fill="hsl(var(--primary))"
+                fill="var(--primary)"
                 radius={[4, 4, 0, 0]}
                 name="Income"
               />
               <Bar
                 dataKey="expenses"
-                fill="hsl(var(--chart-2))"
+                fill="var(--chart-2)"
                 radius={[4, 4, 0, 0]}
                 name="Expenses"
               />
@@ -140,12 +140,10 @@ export function IncomeExpenseChart() {
 
 // Expense Breakdown Pie Chart
 const expenseBreakdownData = [
-  { name: "Housing", value: 2200, color: "hsl(var(--chart-1))" },
-  { name: "Transportation", value: 800, color: "hsl(var(--chart-2))" },
-  { name: "Food", value: 600, color: "hsl(var(--chart-3))" },
-  { name: "Utilities", value: 400, color: "hsl(var(--chart-4))" },
-  { name: "Entertainment", value: 350, color: "hsl(var(--chart-5))" },
-  { name: "Other", value: 450, color: "hsl(var(--muted))" },
+  { name: "Needs", value: 2200, color: "var(--chart-1)" },
+  { name: "Wants", value: 800, color: "var(--chart-2)" },
+  { name: "Desires", value: 600, color: "var(--chart-3)" },
+  { name: "Investments", value: 1200, color: "var(--chart-4)" },
 ]
 
 export function ExpenseBreakdownChart() {
@@ -174,8 +172,8 @@ export function ExpenseBreakdownChart() {
               <Tooltip
                 formatter={(value: number) => `$${value.toLocaleString()}`}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
               />
@@ -196,8 +194,8 @@ export function ExpenseBreakdownChart() {
 
 // Asset vs Liability Distribution
 const assetLiabilityData = [
-  { name: "Assets", value: 285000, color: "hsl(var(--primary))" },
-  { name: "Liabilities", value: 110000, color: "hsl(var(--chart-2))" },
+  { name: "Assets", value: 285000, color: "var(--chart-4)" },
+  { name: "Liabilities", value: 110000, color: "var(--chart-2)" },
 ]
 
 export function AssetLiabilityChart() {
@@ -226,8 +224,8 @@ export function AssetLiabilityChart() {
               <Tooltip
                 formatter={(value: number) => `$${value.toLocaleString()}`}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
               />

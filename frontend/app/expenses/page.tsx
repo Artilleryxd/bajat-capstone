@@ -71,10 +71,10 @@ const transactions = [
 ]
 
 const categoryData = [
-  { name: "Needs", value: 2408.72, percentage: 58, color: "hsl(var(--chart-1))" },
-  { name: "Wants", value: 108, percentage: 16, color: "hsl(var(--chart-2))" },
-  { name: "Desires", value: 299, percentage: 8, color: "hsl(var(--chart-3))" },
-  { name: "Investments", value: 500, percentage: 18, color: "hsl(var(--primary))" },
+  { name: "Needs", value: 2408.72, percentage: 58, color: "var(--chart-1)" },
+  { name: "Wants", value: 108, percentage: 16, color: "var(--chart-2)" },
+  { name: "Desires", value: 299, percentage: 8, color: "var(--chart-3)" },
+  { name: "Investments", value: 500, percentage: 18, color: "var(--primary)" },
 ]
 
 export default function ExpensesPage() {

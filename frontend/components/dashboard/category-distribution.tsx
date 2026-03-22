@@ -47,8 +47,8 @@ export function CategoryDistribution({ data, className }: CategoryDistributionPr
                 <Tooltip
                   formatter={(value: number) => `$${value.toLocaleString()}`}
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                   }}
                 />

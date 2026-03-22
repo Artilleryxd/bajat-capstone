@@ -27,10 +27,10 @@ import {
 } from "lucide-react"
 
 const budgetCategories = [
-  { name: "Needs", allocated: 4250, spent: 3800, color: "hsl(var(--chart-1))", percentage: 50 },
-  { name: "Wants", allocated: 2550, spent: 2100, color: "hsl(var(--chart-2))", percentage: 30 },
-  { name: "Investments", allocated: 1275, spent: 1275, color: "hsl(var(--primary))", percentage: 15 },
-  { name: "Emergency Fund", allocated: 425, spent: 425, color: "hsl(var(--chart-3))", percentage: 5 },
+  { name: "Needs", allocated: 4250, spent: 3800, color: "var(--chart-1)", percentage: 50 },
+  { name: "Wants", allocated: 2550, spent: 2100, color: "var(--chart-2)", percentage: 30 },
+  { name: "Investments", allocated: 1275, spent: 1275, color: "var(--primary)", percentage: 15 },
+  { name: "Emergency Fund", allocated: 425, spent: 425, color: "var(--chart-3)", percentage: 5 },
 ]
 
 const budgetSuggestions = [

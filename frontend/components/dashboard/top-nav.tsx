@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Bell, Search, Sparkles, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +18,13 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { MobileNav } from "./mobile-nav"
 
 export function TopNav() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
+
+  const handleLogout = () => {
+    localStorage.setItem("finsight_auth_mock", "false")
+    router.push("/")
+  }
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-4 lg:px-6 bg-card border-b border-border">
@@ -120,7 +127,7 @@ export function TopNav() {
             <DropdownMenuItem>Billing</DropdownMenuItem>
             <DropdownMenuItem>Help & Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive cursor-pointer" onClick={handleLogout}>
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

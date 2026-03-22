@@ -31,31 +31,31 @@ const portfolioAllocation = [
   {
     name: "Large Cap Funds",
     percentage: 40,
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
     description: "Blue-chip stocks for stability and consistent growth",
   },
   {
     name: "Mid Cap Funds",
     percentage: 25,
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
     description: "Growth potential with moderate risk",
   },
   {
     name: "Small Cap Funds",
     percentage: 10,
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
     description: "High growth potential, higher volatility",
   },
   {
     name: "Bonds & Fixed Income",
     percentage: 15,
-    color: "hsl(var(--chart-4))",
+    color: "var(--chart-4)",
     description: "Stable income and portfolio protection",
   },
   {
     name: "Emergency Fund",
     percentage: 10,
-    color: "hsl(var(--chart-5))",
+    color: "var(--chart-5)",
     description: "Liquid assets for unexpected expenses",
   },
 ]

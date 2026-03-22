@@ -47,8 +47,8 @@ export function LoanTimeline({ data, className }: LoanTimelineProps) {
               <Tooltip
                 formatter={(value: number) => `$${value.toLocaleString()}`}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
               />
@@ -56,8 +56,8 @@ export function LoanTimeline({ data, className }: LoanTimelineProps) {
                 type="monotone"
                 dataKey="balance"
                 stackId="1"
-                stroke="hsl(var(--chart-2))"
-                fill="hsl(var(--chart-2))"
+                stroke="var(--chart-2)"
+                fill="var(--chart-2)"
                 fillOpacity={0.3}
                 name="Remaining Balance"
               />
@@ -65,8 +65,8 @@ export function LoanTimeline({ data, className }: LoanTimelineProps) {
                 type="monotone"
                 dataKey="paid"
                 stackId="2"
-                stroke="hsl(var(--primary))"
-                fill="hsl(var(--primary))"
+                stroke="var(--primary)"
+                fill="var(--primary)"
                 fillOpacity={0.3}
                 name="Total Paid"
               />

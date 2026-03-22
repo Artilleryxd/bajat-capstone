@@ -121,11 +121,11 @@ const liabilities = [
 ]
 
 const allocationData = [
-  { name: "Real Estate", value: 450000, color: "hsl(var(--chart-1))" },
-  { name: "Investments", value: 220000, color: "hsl(var(--primary))" },
-  { name: "Vehicles", value: 32000, color: "hsl(var(--chart-2))" },
-  { name: "Cash", value: 25000, color: "hsl(var(--chart-3))" },
-  { name: "Luxury Items", value: 18000, color: "hsl(var(--chart-4))" },
+  { name: "Real Estate", value: 450000, color: "var(--chart-1)" },
+  { name: "Investments", value: 220000, color: "var(--primary)" },
+  { name: "Vehicles", value: 32000, color: "var(--chart-2)" },
+  { name: "Cash", value: 25000, color: "var(--chart-3)" },
+  { name: "Luxury Items", value: 18000, color: "var(--chart-4)" },
 ]
 
 const totalAssets = assets.reduce((sum, a) => sum + a.value, 0)
