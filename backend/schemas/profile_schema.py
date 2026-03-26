@@ -4,6 +4,7 @@ from datetime import date
 
 class OnboardingRequest(BaseModel):
     full_name: str
+    gender: Optional[str] = None
     date_of_birth: Optional[str] = None
     country: str
     city: str
@@ -18,6 +19,7 @@ class OnboardingRequest(BaseModel):
 class ProfileResponse(BaseModel):
     id: str
     full_name: Optional[str]
+    gender: Optional[str]
     date_of_birth: Optional[str]
     country: Optional[str]
     city: Optional[str]

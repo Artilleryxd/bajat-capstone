@@ -10,8 +10,11 @@ class ProfileService:
     @staticmethod
     def onboard_user(user_id: str, request: OnboardingRequest):
         try:
+            normalized_gender = request.gender.strip().lower() if request.gender else None
+
             update_data = {
                 "full_name": request.full_name,
+                "gender": normalized_gender,
                 "date_of_birth": request.date_of_birth,
                 "country": request.country,
                 "city": request.city,
@@ -25,7 +28,18 @@ class ProfileService:
                 "onboarding_complete": True,
             }
 
-            res = supabase.table("user_profiles").update(update_data).eq("id", user_id).execute()
+            try:
+                res = supabase.table("user_profiles").update(update_data).eq("id", user_id).execute()
+            except Exception as update_error:
+                # Backward compatibility: if the DB migration adding `gender` wasn't applied yet,
+                # retry once without gender so onboarding can still complete.
+                error_text = str(update_error).lower()
+                if "gender" in error_text and ("column" in error_text or "schema cache" in error_text):
+                    update_data.pop("gender", None)
+                    res = supabase.table("user_profiles").update(update_data).eq("id", user_id).execute()
+                    logger.warning("Onboarding saved without gender for user_id=%s because gender column is missing", user_id)
+                else:
+                    raise
 
             if not res.data:
                 raise Exception("Profile record not found to update")

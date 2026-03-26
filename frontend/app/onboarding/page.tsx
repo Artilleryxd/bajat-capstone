@@ -36,6 +36,8 @@ export default function OnboardingPage() {
     mode: "onChange",
     defaultValues: {
       fullName: "",
+      gender: undefined,
+      dateOfBirth: "",
       age: undefined,
       country: "",
       state: "",
@@ -61,7 +63,8 @@ export default function OnboardingPage() {
 
       const payload = {
         full_name: data.fullName,
-        date_of_birth: undefined,
+        gender: data.gender,
+        date_of_birth: data.dateOfBirth,
         country: data.country,
         city: data.city,
         currency: "USD",
@@ -85,7 +88,12 @@ export default function OnboardingPage() {
       const responseData = await res.json();
 
       if (!res.ok) {
-        throw new Error(responseData.detail?.message || responseData.message || "Onboarding failed");
+        throw new Error(
+          responseData.detail?.detail ||
+            responseData.detail?.message ||
+            responseData.message ||
+            "Onboarding failed"
+        );
       }
 
       router.replace("/dashboard");

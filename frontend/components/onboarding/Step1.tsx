@@ -23,7 +23,7 @@ export function Step1({ onNext }: { onNext: () => void }) {
 
   const handleNext = async () => {
     // Only validate the fields present in Step 1
-    const isStepValid = await trigger(["fullName", "age", "country", "state", "city", "maritalStatus"] as any);
+    const isStepValid = await trigger(["fullName", "gender", "dateOfBirth", "age", "country", "state", "city", "maritalStatus"] as any);
     if (isStepValid) {
       onNext();
     }
@@ -46,6 +46,46 @@ export function Step1({ onNext }: { onNext: () => void }) {
             {errors.fullName.message}
           </p>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 space-y-0">
+        <div className="space-y-1.5">
+          <label htmlFor="gender" className="text-sm font-medium text-gray-700">
+            Gender
+          </label>
+          <select
+            id="gender"
+            {...register("gender")}
+            className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          >
+            <option value="">Select gender...</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+          {errors.gender && (
+            <p className="text-xs text-red-500 font-medium pt-1">
+              {errors.gender.message as string}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-700">
+            Date of Birth
+          </label>
+          <input
+            id="dateOfBirth"
+            type="date"
+            {...register("dateOfBirth")}
+            className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+          {errors.dateOfBirth && (
+            <p className="text-xs text-red-500 font-medium pt-1">
+              {errors.dateOfBirth.message}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="space-y-1.5">

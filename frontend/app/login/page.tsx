@@ -7,19 +7,51 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { loginSchema, LoginFormValues } from "@/lib/validation/loginSchema";
 import { API_BASE_URL } from "@/lib/config";
-import { getToken, setToken } from "@/lib/auth";
+import { getToken, setToken, logout } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const token = getToken();
-    if (token) {
-      router.replace("/dashboard");
-    }
+    const verifySession = async () => {
+      const token = getToken();
+      if (!token) {
+        setIsCheckingSession(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/v1/profile/me`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          logout();
+          setIsCheckingSession(false);
+          return;
+        }
+
+        const profile = await res.json();
+        if (profile.onboarding_complete) {
+          router.replace("/dashboard");
+          return;
+        }
+
+        router.replace("/onboarding");
+      } catch {
+        logout();
+        setIsCheckingSession(false);
+      }
+    };
+
+    verifySession();
   }, [router]);
 
   const {
@@ -89,6 +121,10 @@ export default function LoginPage() {
       setErrorMessage(error.message);
     }
   };
+
+  if (isCheckingSession) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">

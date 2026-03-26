@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken } from "@/lib/auth";
+import { getToken, logout } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
 
 export default function DashboardLayout({
@@ -30,6 +30,7 @@ export default function DashboardLayout({
         });
 
         if (!res.ok) {
+          logout();
           router.replace("/login");
           return;
         }
@@ -42,6 +43,7 @@ export default function DashboardLayout({
 
         setIsCheckingAccess(false);
       } catch {
+        logout();
         router.replace("/login");
       }
     };

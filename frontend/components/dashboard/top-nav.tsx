@@ -16,14 +16,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { MobileNav } from "./mobile-nav"
+import { logout } from "@/lib/auth"
 
 export function TopNav() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
 
   const handleLogout = () => {
-    localStorage.setItem("finsight_auth_mock", "false")
-    router.push("/")
+    logout()
+    router.replace("/login")
   }
 
   return (
