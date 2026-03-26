@@ -3,6 +3,8 @@ import { z } from "zod";
 export const step1Schema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   age: z.coerce.number().min(18, "Age must be at least 18"),
+  country: z.string().min(1, "Country is required"),
+  state: z.string().min(1, "State is required"),
   city: z.string().min(1, "City is required"),
   maritalStatus: z.enum(["Single", "Married"], {
     required_error: "Please select a marital status",

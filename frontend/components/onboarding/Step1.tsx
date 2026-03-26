@@ -1,18 +1,29 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { Step1FormValues } from "@/lib/validation/onboardingSchema";
+import { Country, State } from "country-state-city";
 
 export function Step1({ onNext }: { onNext: () => void }) {
   const {
     register,
     trigger,
+    watch,
+    setValue,
     formState: { errors },
   } = useFormContext<Step1FormValues>();
 
+  const selectedCountry = watch("country");
+  
+  const countries = useMemo(() => Country.getAllCountries(), []);
+  const states = useMemo(() => {
+    return selectedCountry ? State.getStatesOfCountry(selectedCountry) : [];
+  }, [selectedCountry]);
+
   const handleNext = async () => {
     // Only validate the fields present in Step 1
-    const isStepValid = await trigger(["fullName", "age", "city", "maritalStatus"] as any);
+    const isStepValid = await trigger(["fullName", "age", "country", "state", "city", "maritalStatus"] as any);
     if (isStepValid) {
       onNext();
     }
@@ -53,6 +64,59 @@ export function Step1({ onNext }: { onNext: () => void }) {
             {errors.age.message}
           </p>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 space-y-0">
+        <div className="space-y-1.5">
+          <label htmlFor="country" className="text-sm font-medium text-gray-700">
+            Country
+          </label>
+          <select
+            id="country"
+            {...register("country")}
+            onChange={(e) => {
+              register("country").onChange(e);
+              setValue("state", ""); // Reset state when country changes
+            }}
+            className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          >
+            <option value="">Select country...</option>
+            {countries.map((c) => (
+              <option key={c.isoCode} value={c.isoCode}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          {errors.country && (
+            <p className="text-xs text-red-500 font-medium pt-1">
+              {errors.country.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="state" className="text-sm font-medium text-gray-700">
+            State / Province
+          </label>
+          <select
+            id="state"
+            {...register("state")}
+            disabled={!selectedCountry || states.length === 0}
+            className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:bg-gray-50"
+          >
+            <option value="">Select state...</option>
+            {states.map((s) => (
+              <option key={s.isoCode} value={s.isoCode}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          {errors.state && (
+            <p className="text-xs text-red-500 font-medium pt-1">
+              {errors.state.message}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="space-y-1.5">

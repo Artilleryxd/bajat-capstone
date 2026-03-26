@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,12 +13,23 @@ import {
 import { Step1 } from "@/components/onboarding/Step1";
 import { Step2 } from "@/components/onboarding/Step2";
 
+import { API_BASE_URL } from "@/lib/config";
+import { getToken } from "@/lib/auth";
+
 const fullSchema = step1Schema.merge(step2Schema);
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router]);
 
   const methods = useForm<OnboardingFormValues>({
     resolver: zodResolver(fullSchema),
@@ -26,6 +37,8 @@ export default function OnboardingPage() {
     defaultValues: {
       fullName: "",
       age: undefined,
+      country: "",
+      state: "",
       city: "",
       maritalStatus: undefined,
       occupation: "",
@@ -38,13 +51,50 @@ export default function OnboardingPage() {
 
   const onSubmit = async (data: OnboardingFormValues) => {
     setIsSubmitting(true);
-    // Placeholder for API call
-    console.log("Onboarding complete", data);
-    
-    setTimeout(() => {
+    setErrorMessage("");
+
+    try {
+      const token = getToken();
+      if (!token) {
+        throw new Error("Session expired. Please login again.");
+      }
+
+      const payload = {
+        full_name: data.fullName,
+        date_of_birth: undefined,
+        country: data.country,
+        city: data.city,
+        currency: "USD",
+        marital_status: data.maritalStatus,
+        num_dependents: data.dependants,
+        housing_status: data.housingStatus,
+        monthly_income: data.income,
+        income_type: data.occupation,
+        has_existing_loans: false,
+      };
+
+      const res = await fetch(`${API_BASE_URL}/v1/profile/onboard`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(responseData.detail?.message || responseData.message || "Onboarding failed");
+      }
+
+      router.replace("/dashboard");
+    } catch (error: any) {
+      console.error("Onboarding Error:", error);
+      setErrorMessage(error.message);
+    } finally {
       setIsSubmitting(false);
-      router.push("/dashboard");
-    }, 1500);
+    }
   };
 
   const nextStep = () => setCurrentStep(2);
@@ -73,6 +123,12 @@ export default function OnboardingPage() {
             />
           </div>
         </div>
+
+        {errorMessage && (
+          <div className="bg-red-50 text-red-500 text-sm p-3 rounded-lg border border-red-100 mb-4">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Form container */}
         <div className="relative min-h-[400px]">

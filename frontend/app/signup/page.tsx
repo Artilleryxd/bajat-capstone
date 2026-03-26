@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signupSchema, SignupFormValues } from "@/lib/validation/signupSchema";
 import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
+import { API_BASE_URL } from "@/lib/config";
+import { getToken, setToken } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   const {
     register,
@@ -26,12 +36,42 @@ export default function SignupPage() {
 
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
-    // Placeholder api call
-    console.log("Form submitted", data);
-    setTimeout(() => {
+    setErrorMessage("");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email, password: data.password })
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(responseData.detail?.detail || responseData.detail?.message || responseData.message || "Failed to create account");
+      }
+
+      const loginRes = await fetch(`${API_BASE_URL}/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email, password: data.password }),
+      });
+
+      const loginData = await loginRes.json();
+
+      if (!loginRes.ok) {
+        throw new Error(loginData.detail?.detail || loginData.detail?.message || loginData.message || "Failed to log in after signup");
+      }
+
+      setToken(loginData.access_token);
+      router.replace("/onboarding");
+
+    } catch (error: any) {
+      console.error("Signup Error:", error);
+      setErrorMessage(error.message);
+    } finally {
       setIsLoading(false);
-      router.push("/onboarding");
-    }, 2000);
+    }
   };
 
   const passwordValue = watch("password");
@@ -47,6 +87,12 @@ export default function SignupPage() {
             Join us to start your financial journey
           </p>
         </div>
+
+        {errorMessage && (
+          <div className="bg-red-50 text-red-500 text-sm p-3 rounded-lg border border-red-100">
+            {errorMessage}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">

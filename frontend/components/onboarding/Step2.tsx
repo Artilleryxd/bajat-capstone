@@ -1,8 +1,10 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import { Step2FormValues } from "@/lib/validation/onboardingSchema";
+import { Step2FormValues, OnboardingFormValues } from "@/lib/validation/onboardingSchema";
 import { Loader2 } from "lucide-react";
+import { getCurrencySymbol } from "@/lib/utils/currencyMap";
+import { useMemo } from "react";
 
 export function Step2({
   onBack,
@@ -13,8 +15,12 @@ export function Step2({
 }) {
   const {
     register,
+    watch,
     formState: { errors, isValid },
-  } = useFormContext<Step2FormValues>();
+  } = useFormContext<OnboardingFormValues>();
+
+  const countryCode = watch("country");
+  const currencySymbol = useMemo(() => getCurrencySymbol(countryCode), [countryCode]);
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -40,15 +46,20 @@ export function Step2({
 
       <div className="space-y-1.5">
         <label htmlFor="income" className="text-sm font-medium text-gray-700">
-          Expected Monthly Income ($)
+          Expected Monthly Income
         </label>
-        <input
-          id="income"
-          type="number"
-          {...register("income")}
-          placeholder="5000"
-          className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-        />
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+            {currencySymbol}
+          </span>
+          <input
+            id="income"
+            type="number"
+            {...register("income")}
+            placeholder="5000"
+            className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 pl-8 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
         {errors.income && (
           <p className="text-xs text-red-500 font-medium pt-1">
             {errors.income.message}
