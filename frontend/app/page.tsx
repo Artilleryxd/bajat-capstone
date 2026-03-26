@@ -1,31 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Animation } from "@/components/landing/lottie-animation"
-import Link from "next/link"
 
 export default function LandingPage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    // Check mock authentication state
-    const isLoggedIn = localStorage.getItem("finsight_auth_mock") === "true"
-    if (isLoggedIn) {
-      router.push("/dashboard")
-    } else {
-      setIsLoading(false)
-    }
-  }, [router])
-
-  if (isLoading) return null
-
-  const handleAuth = () => {
-    localStorage.setItem("finsight_auth_mock", "true")
-    router.push("/dashboard")
-  }
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-background text-foreground flex items-center justify-center font-sans">
@@ -60,7 +40,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 pt-6 relative z-10">
                 <Button 
                   size="lg" 
-                  onClick={handleAuth}
+                  onClick={() => router.push("/signup")}
                   className="rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 w-full sm:w-auto text-base px-8 h-14 bg-gradient-to-r from-blue-600 to-green-500 text-white border-0" 
                 >
                   Sign Up
@@ -68,7 +48,7 @@ export default function LandingPage() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  onClick={handleAuth}
+                  onClick={() => router.push("/login")}
                   className="rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all duration-300 w-full sm:w-auto text-base px-8 h-14 backdrop-blur-md bg-background/50 border-border/50" 
                 >
                   Login
