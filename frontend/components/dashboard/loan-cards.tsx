@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 import {
   CreditCard,
   Home,
@@ -39,6 +40,8 @@ const iconMap: Record<string, LucideIcon> = {
 }
 
 export function LoanCards({ loans, className }: LoanCardsProps) {
+  const { formatCurrency } = useCurrency()
+
   return (
     <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-3", className)}>
       {loans.map((loan) => {
@@ -66,7 +69,7 @@ export function LoanCards({ loans, className }: LoanCardsProps) {
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Outstanding Balance</span>
-                  <span className="font-bold text-lg">${loan.balance.toLocaleString()}</span>
+                  <span className="font-bold text-lg">{formatCurrency(loan.balance)}</span>
                 </div>
                 <Progress value={paidPercentage} className="h-2" />
                 <p className="text-xs text-muted-foreground text-right">
@@ -81,7 +84,7 @@ export function LoanCards({ loans, className }: LoanCardsProps) {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Monthly EMI</p>
-                  <p className="font-semibold">${loan.emi.toLocaleString()}</p>
+                  <p className="font-semibold">{formatCurrency(loan.emi)}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-muted-foreground">Remaining Tenure</p>

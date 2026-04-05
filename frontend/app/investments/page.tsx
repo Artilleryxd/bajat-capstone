@@ -26,6 +26,7 @@ import {
   Clock,
   AlertTriangle,
 } from "lucide-react"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 const portfolioAllocation = [
   {
@@ -68,6 +69,8 @@ const investmentSuggestions = [
 ]
 
 export default function InvestmentsPage() {
+  const { currencySymbol, formatCurrency } = useCurrency()
+
   const [income, setIncome] = useState("8500")
   const [savingsRate, setSavingsRate] = useState("20")
   const [investmentHorizon, setInvestmentHorizon] = useState("")
@@ -123,20 +126,20 @@ export default function InvestmentsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Monthly Investment"
-            value="$1,700"
+            value={formatCurrency(1700)}
             icon={PiggyBank}
             iconColor="bg-primary/10 text-primary"
           />
           <MetricCard
             title="Current Portfolio"
-            value="$125,000"
+            value={formatCurrency(125000)}
             change={8.5}
             icon={TrendingUp}
             iconColor="bg-success/10 text-success"
           />
           <MetricCard
             title="Investment Goal"
-            value="$1,000,000"
+            value={formatCurrency(1000000)}
             icon={Target}
             iconColor="bg-chart-3/10 text-chart-3"
           />
@@ -162,7 +165,7 @@ export default function InvestmentsPage() {
                 <Label htmlFor="income">Monthly Income</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
+                    {currencySymbol}
                   </span>
                   <Input
                     id="income"
@@ -274,7 +277,7 @@ export default function InvestmentsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-2xl font-bold">{item.percentage}%</span>
                     <span className="text-sm text-muted-foreground">
-                      ${((parseInt(income) * parseInt(savingsRate) / 100) * item.percentage / 100).toFixed(0)}/mo
+                      {formatCurrency(Math.round(parseInt(income) * parseInt(savingsRate) / 100 * item.percentage / 100))}/mo
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">{item.description}</p>

@@ -25,8 +25,11 @@ import {
   Download,
   Trash2,
 } from "lucide-react"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 export default function SettingsPage() {
+  const { currencyCode } = useCurrency()
+
   const [notifications, setNotifications] = useState({
     budgetAlerts: true,
     weeklyDigest: true,
@@ -230,15 +233,20 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label>Currency</Label>
-              <Select defaultValue="usd">
+              <Select defaultValue={currencyCode}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="usd">USD ($)</SelectItem>
-                  <SelectItem value="eur">EUR (€)</SelectItem>
-                  <SelectItem value="gbp">GBP (£)</SelectItem>
-                  <SelectItem value="jpy">JPY (¥)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="GBP">GBP (£)</SelectItem>
+                  <SelectItem value="JPY">JPY (¥)</SelectItem>
+                  <SelectItem value="INR">INR (₹)</SelectItem>
+                  <SelectItem value="CAD">CAD (C$)</SelectItem>
+                  <SelectItem value="AUD">AUD (A$)</SelectItem>
+                  <SelectItem value="SGD">SGD (S$)</SelectItem>
+                  <SelectItem value="AED">AED (د.إ)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

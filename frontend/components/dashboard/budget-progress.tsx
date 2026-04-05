@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 interface BudgetCategory {
   name: string
@@ -19,6 +20,8 @@ interface BudgetProgressProps {
 }
 
 export function BudgetProgress({ categories, totalBudget, className }: BudgetProgressProps) {
+  const { formatCurrency } = useCurrency()
+
   return (
     <Card className={cn("", className)}>
       <CardHeader className="pb-2">
@@ -44,9 +47,9 @@ export function BudgetProgress({ categories, totalBudget, className }: BudgetPro
                 </div>
                 <div className="text-sm text-right">
                   <span className={cn(isOverBudget && "text-destructive font-medium")}>
-                    ${category.spent.toLocaleString()}
+                    {formatCurrency(category.spent)}
                   </span>
-                  <span className="text-muted-foreground"> / ${category.allocated.toLocaleString()}</span>
+                  <span className="text-muted-foreground"> / {formatCurrency(category.allocated)}</span>
                 </div>
               </div>
               <div className="relative">
@@ -73,7 +76,7 @@ export function BudgetProgress({ categories, totalBudget, className }: BudgetPro
         <div className="pt-4 border-t">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Total Monthly Budget</span>
-            <span className="font-bold text-lg">${totalBudget.toLocaleString()}</span>
+            <span className="font-bold text-lg">{formatCurrency(totalBudget)}</span>
           </div>
         </div>
       </CardContent>

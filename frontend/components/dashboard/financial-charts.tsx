@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 // Net Worth Trend Chart
 const netWorthData = [
@@ -34,6 +35,8 @@ const netWorthData = [
 ]
 
 export function NetWorthChart() {
+  const { formatCurrency, currencySymbol } = useCurrency()
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -51,11 +54,11 @@ export function NetWorthChart() {
               />
               <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `$${value / 1000}k`}
+                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
                 className="text-muted-foreground"
               />
               <Tooltip
-                formatter={(value: number) => [`$${value.toLocaleString()}`, "Net Worth"]}
+                formatter={(value: number) => [formatCurrency(value), "Net Worth"]}
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   border: "1px solid var(--border)",
@@ -89,6 +92,8 @@ const incomeExpenseData = [
 ]
 
 export function IncomeExpenseChart() {
+  const { formatCurrency, currencySymbol } = useCurrency()
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -106,11 +111,11 @@ export function IncomeExpenseChart() {
               />
               <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `$${value / 1000}k`}
+                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
                 className="text-muted-foreground"
               />
               <Tooltip
-                formatter={(value: number) => `$${value.toLocaleString()}`}
+                formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   border: "1px solid var(--border)",
@@ -147,6 +152,8 @@ const expenseBreakdownData = [
 ]
 
 export function ExpenseBreakdownChart() {
+  const { formatCurrency } = useCurrency()
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -170,7 +177,7 @@ export function ExpenseBreakdownChart() {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => `$${value.toLocaleString()}`}
+                formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   border: "1px solid var(--border)",
@@ -199,6 +206,8 @@ const assetLiabilityData = [
 ]
 
 export function AssetLiabilityChart() {
+  const { formatCurrency } = useCurrency()
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -222,7 +231,7 @@ export function AssetLiabilityChart() {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => `$${value.toLocaleString()}`}
+                formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   border: "1px solid var(--border)",

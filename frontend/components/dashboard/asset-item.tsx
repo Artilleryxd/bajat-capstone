@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 import {
   Home,
   Car,
@@ -54,6 +55,7 @@ const iconMap: Record<string, LucideIcon> = {
 
 export function AssetItem({ item, className }: AssetItemProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const { formatCurrency } = useCurrency()
   const Icon = iconMap[item.type] || Building
 
   const gainLoss = item.value - item.purchasePrice
@@ -92,7 +94,7 @@ export function AssetItem({ item, className }: AssetItemProps) {
               </p>
             </div>
             <div className="text-right">
-              <p className="font-semibold">${item.value.toLocaleString()}</p>
+              <p className="font-semibold">{formatCurrency(item.value)}</p>
               <div
                 className={cn(
                   "flex items-center justify-end gap-1 text-xs",
@@ -136,11 +138,11 @@ export function AssetItem({ item, className }: AssetItemProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-lg bg-secondary">
                 <p className="text-sm text-muted-foreground">Current Value</p>
-                <p className="text-lg font-bold">${item.value.toLocaleString()}</p>
+                <p className="text-lg font-bold">{formatCurrency(item.value)}</p>
               </div>
               <div className="p-3 rounded-lg bg-secondary">
                 <p className="text-sm text-muted-foreground">Purchase Price</p>
-                <p className="text-lg font-bold">${item.purchasePrice.toLocaleString()}</p>
+                <p className="text-lg font-bold">{formatCurrency(item.purchasePrice)}</p>
               </div>
             </div>
 
@@ -153,7 +155,7 @@ export function AssetItem({ item, className }: AssetItemProps) {
                     isPositive ? "text-success" : "text-destructive"
                   )}
                 >
-                  {isPositive ? "+" : ""}${gainLoss.toLocaleString()}
+                  {isPositive ? "+" : ""}{formatCurrency(Math.abs(gainLoss))}
                 </span>
                 <Badge
                   variant="outline"
@@ -174,13 +176,13 @@ export function AssetItem({ item, className }: AssetItemProps) {
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Estimated Value</span>
                   <span className="font-bold text-primary">
-                    ${futureValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {formatCurrency(futureValue)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Projected Gain</span>
                   <span className="font-medium text-success">
-                    +${projectedGain.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    +{formatCurrency(projectedGain)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

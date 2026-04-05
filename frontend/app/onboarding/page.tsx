@@ -15,6 +15,7 @@ import { Step2 } from "@/components/onboarding/Step2";
 
 import { API_BASE_URL } from "@/lib/config";
 import { getToken } from "@/lib/auth";
+import { getCurrencyCode } from "@/lib/utils/countryToCurrency";
 
 const fullSchema = step1Schema.merge(step2Schema);
 
@@ -42,6 +43,7 @@ export default function OnboardingPage() {
       country: "",
       state: "",
       city: "",
+      neighbourhood: "",
       maritalStatus: undefined,
       occupation: "",
       income: undefined,
@@ -67,7 +69,8 @@ export default function OnboardingPage() {
         date_of_birth: data.dateOfBirth,
         country: data.country,
         city: data.city,
-        currency: "USD",
+        neighbourhood: data.neighbourhood || null,
+        currency: getCurrencyCode(data.country),
         marital_status: data.maritalStatus,
         num_dependents: data.dependants,
         housing_status: data.housingStatus,

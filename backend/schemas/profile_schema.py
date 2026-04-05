@@ -8,6 +8,7 @@ class OnboardingRequest(BaseModel):
     date_of_birth: Optional[str] = None
     country: str
     city: str
+    neighbourhood: Optional[str] = None
     currency: str
     marital_status: str
     num_dependents: int
@@ -23,6 +24,7 @@ class ProfileResponse(BaseModel):
     date_of_birth: Optional[str]
     country: Optional[str]
     city: Optional[str]
+    neighbourhood: Optional[str]
     monthly_income: Optional[float]
     income_type: Optional[str]
     currency: Optional[str]

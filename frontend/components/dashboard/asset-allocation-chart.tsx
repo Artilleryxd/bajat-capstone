@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 interface AllocationData {
   name: string
@@ -21,6 +22,7 @@ export function AssetAllocationChart({
   title = "Asset Allocation",
   className,
 }: AssetAllocationChartProps) {
+  const { formatCurrency } = useCurrency()
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
   return (
@@ -47,7 +49,7 @@ export function AssetAllocationChart({
               </Pie>
               <Tooltip
                 formatter={(value: number) => [
-                  `$${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`,
+                  `${formatCurrency(value)} (${((value / total) * 100).toFixed(1)}%)`,
                   "",
                 ]}
                 contentStyle={{
@@ -71,7 +73,7 @@ export function AssetAllocationChart({
         </div>
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">Total Assets</p>
-          <p className="text-2xl font-bold">${total.toLocaleString()}</p>
+          <p className="text-2xl font-bold">{formatCurrency(total)}</p>
         </div>
       </CardContent>
     </Card>

@@ -26,6 +26,7 @@ import {
   DollarSign,
   TrendingDown,
 } from "lucide-react"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 const loans = [
   {
@@ -91,6 +92,8 @@ const loanSuggestions = [
 ]
 
 export default function LoansPage() {
+  const { formatCurrency } = useCurrency()
+
   const [loanType, setLoanType] = useState("")
   const [balance, setBalance] = useState("")
   const [interestRate, setInterestRate] = useState("")
@@ -112,19 +115,19 @@ export default function LoansPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Total Debt"
-            value="$346,500"
+            value={formatCurrency(346500)}
             icon={DollarSign}
             iconColor="bg-chart-2/10 text-chart-2"
           />
           <MetricCard
             title="Monthly Payments"
-            value="$2,870"
+            value={formatCurrency(2870)}
             icon={Calendar}
             iconColor="bg-primary/10 text-primary"
           />
           <MetricCard
             title="Interest Saved"
-            value="$12,340"
+            value={formatCurrency(12340)}
             change={15.2}
             changeLabel="with optimization"
             icon={TrendingDown}
@@ -153,7 +156,7 @@ export default function LoansPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-success/10 border border-success/20">
                 <span className="text-sm">Total Interest Saved</span>
-                <span className="font-bold text-success">$12,340</span>
+                <span className="font-bold text-success">{formatCurrency(12340)}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <span className="text-sm">Time to Debt Freedom</span>
@@ -197,7 +200,7 @@ export default function LoansPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border">
                 <span className="text-sm">Total Interest Saved</span>
-                <span className="font-bold">$8,450</span>
+                <span className="font-bold">{formatCurrency(8450)}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border">
                 <span className="text-sm">Time to Debt Freedom</span>
@@ -219,7 +222,7 @@ export default function LoansPage() {
                         </Badge>
                         <span className="flex-1">{loan.type}</span>
                         <span className="text-sm text-muted-foreground font-medium">
-                          ${loan.balance.toLocaleString()}
+                          {formatCurrency(loan.balance)}
                         </span>
                       </li>
                     ))}

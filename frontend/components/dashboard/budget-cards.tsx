@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 import type { LucideIcon } from "lucide-react"
 
 interface BudgetCardProps {
@@ -21,6 +22,8 @@ export function BudgetCard({
   description,
   className,
 }: BudgetCardProps) {
+  const { formatCurrency } = useCurrency()
+
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardContent className="p-5">
@@ -39,7 +42,7 @@ export function BudgetCard({
           </span>
         </div>
         <h3 className="font-semibold mb-1">{title}</h3>
-        <p className="text-2xl font-bold mb-2">${amount.toLocaleString()}</p>
+        <p className="text-2xl font-bold mb-2">{formatCurrency(amount)}</p>
         {description && (
           <p className="text-sm text-muted-foreground">{description}</p>
         )}

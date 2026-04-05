@@ -17,6 +17,7 @@ import {
 import { PenLine, FileSpreadsheet, FileText, Camera, Upload, Sparkles, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getToken } from "@/lib/auth"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 import type { ParsedExpense, ExpenseCategory } from "@/lib/types/expense"
 
 interface ExpenseInputProps {
@@ -28,6 +29,8 @@ interface ExpenseInputProps {
 type UploadStatus = "idle" | "uploading" | "processing" | "done" | "error"
 
 export function ExpenseInput({ className, onManualAdded, onParseComplete }: ExpenseInputProps) {
+  const { currencySymbol } = useCurrency()
+
   // Manual form state
   const [amount, setAmount] = useState("")
   const [description, setDescription] = useState("")
@@ -248,7 +251,7 @@ export function ExpenseInput({ className, onManualAdded, onParseComplete }: Expe
                 <Label htmlFor="expense-amount">Amount</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    ₹
+                    {currencySymbol}
                   </span>
                   <Input
                     id="expense-amount"

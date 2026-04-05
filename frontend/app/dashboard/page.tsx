@@ -14,6 +14,7 @@ import {
 import { Wallet, TrendingUp, CreditCard, PiggyBank, Loader2 } from "lucide-react"
 import { getToken } from "@/lib/auth"
 import { API_BASE_URL } from "@/lib/config"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 interface UserProfile {
   id: string
@@ -104,14 +105,7 @@ export default function DashboardPage() {
     )
   }
 
-  const formatCurrency = (amount: number | undefined | null) => {
-    if (amount == null) return ""
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: profile.currency || "USD",
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
+  const { formatCurrency } = useCurrency()
 
   return (
     <DashboardLayout>

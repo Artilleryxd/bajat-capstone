@@ -25,6 +25,7 @@ import {
   Sparkles,
   Calculator,
 } from "lucide-react"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 const budgetCategories = [
   { name: "Needs", allocated: 4250, spent: 3800, color: "var(--chart-1)", percentage: 50 },
@@ -41,6 +42,8 @@ const budgetSuggestions = [
 ]
 
 export default function BudgetPage() {
+  const { currencySymbol } = useCurrency()
+
   const [income, setIncome] = useState("8500")
   const [location, setLocation] = useState("")
   const [maritalStatus, setMaritalStatus] = useState("")
@@ -80,7 +83,7 @@ export default function BudgetPage() {
                 <Label htmlFor="income">Monthly Income</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
+                    {currencySymbol}
                   </span>
                   <Input
                     id="income"

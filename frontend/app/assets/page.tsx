@@ -13,6 +13,7 @@ import {
   Scale,
   Wallet,
 } from "lucide-react"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 const assets = [
   {
@@ -133,6 +134,8 @@ const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0)
 const netWorth = totalAssets - totalLiabilities
 
 export default function AssetsPage() {
+  const { formatCurrency } = useCurrency()
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -154,21 +157,21 @@ export default function AssetsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Total Assets"
-            value={`$${totalAssets.toLocaleString()}`}
+            value={formatCurrency(totalAssets)}
             change={8.4}
             icon={TrendingUp}
             iconColor="bg-success/10 text-success"
           />
           <MetricCard
             title="Total Liabilities"
-            value={`$${totalLiabilities.toLocaleString()}`}
+            value={formatCurrency(totalLiabilities)}
             change={-5.2}
             icon={TrendingDown}
             iconColor="bg-destructive/10 text-destructive"
           />
           <MetricCard
             title="Net Worth"
-            value={`$${netWorth.toLocaleString()}`}
+            value={formatCurrency(netWorth)}
             change={12.5}
             icon={Wallet}
             iconColor="bg-primary/10 text-primary"
@@ -194,7 +197,7 @@ export default function AssetsPage() {
                   Assets
                 </CardTitle>
                 <span className="text-lg font-bold text-success">
-                  ${totalAssets.toLocaleString()}
+                  {formatCurrency(totalAssets)}
                 </span>
               </div>
             </CardHeader>
@@ -215,7 +218,7 @@ export default function AssetsPage() {
                 Liabilities
               </CardTitle>
               <span className="text-lg font-bold text-destructive">
-                ${totalLiabilities.toLocaleString()}
+                {formatCurrency(totalLiabilities)}
               </span>
             </div>
           </CardHeader>
@@ -239,13 +242,13 @@ export default function AssetsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Your Net Worth</p>
                   <p className="text-3xl font-bold text-primary">
-                    ${netWorth.toLocaleString()}
+                    {formatCurrency(netWorth)}
                   </p>
                 </div>
               </div>
               <div className="text-center sm:text-right">
                 <p className="text-sm text-muted-foreground">Year-over-Year Growth</p>
-                <p className="text-xl font-bold text-success">+$21,500 (+12.5%)</p>
+                <p className="text-xl font-bold text-success">+{formatCurrency(21500)} (+12.5%)</p>
               </div>
             </div>
           </CardContent>

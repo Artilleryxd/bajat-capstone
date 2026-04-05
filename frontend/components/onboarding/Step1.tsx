@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useFormContext } from "react-hook-form";
 import { Step1FormValues } from "@/lib/validation/onboardingSchema";
 import { Country, State } from "country-state-city";
+import { detectUserLocation, ReverseGeoResult } from "@/lib/utils/geolocation";
+import { MapPin, Loader2, CheckCircle2 } from "lucide-react";
+
+type LocationStatus = "idle" | "loading" | "success" | "error";
 
 export function Step1({ onNext }: { onNext: () => void }) {
   const {
@@ -15,15 +19,81 @@ export function Step1({ onNext }: { onNext: () => void }) {
   } = useFormContext<Step1FormValues>();
 
   const selectedCountry = watch("country");
-  
+
   const countries = useMemo(() => Country.getAllCountries(), []);
   const states = useMemo(() => {
     return selectedCountry ? State.getStatesOfCountry(selectedCountry) : [];
   }, [selectedCountry]);
 
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
+  const [locationError, setLocationError] = useState("");
+  const [detectedArea, setDetectedArea] = useState("");
+
+  const handleDetectLocation = useCallback(async () => {
+    setLocationStatus("loading");
+    setLocationError("");
+
+    try {
+      const result: ReverseGeoResult = await detectUserLocation();
+
+      // Auto-fill country if we got a valid country code
+      if (result.countryCode) {
+        const matchedCountry = countries.find(
+          (c) => c.isoCode === result.countryCode
+        );
+        if (matchedCountry) {
+          setValue("country", matchedCountry.isoCode, { shouldValidate: true });
+
+          // Auto-fill state if available
+          if (result.state) {
+            // Small delay to let states list populate from country change
+            setTimeout(() => {
+              const countryStates = State.getStatesOfCountry(matchedCountry.isoCode);
+              const matchedState = countryStates.find(
+                (s) =>
+                  s.name.toLowerCase() === result.state?.toLowerCase() ||
+                  s.isoCode.toLowerCase() === result.state?.toLowerCase()
+              );
+              if (matchedState) {
+                setValue("state", matchedState.isoCode, { shouldValidate: true });
+              }
+            }, 100);
+          }
+        }
+      }
+
+      // Auto-fill city
+      if (result.city) {
+        setValue("city", result.city, { shouldValidate: true });
+      }
+
+      // Auto-fill neighbourhood
+      if (result.neighbourhood) {
+        setValue("neighbourhood", result.neighbourhood, { shouldValidate: true });
+        setDetectedArea(result.neighbourhood);
+      } else if (result.city) {
+        setDetectedArea(result.city);
+      }
+
+      setLocationStatus("success");
+    } catch (err) {
+      const message = typeof err === "string" ? err : "Failed to detect location.";
+      setLocationError(message);
+      setLocationStatus("error");
+    }
+  }, [countries, setValue]);
+
   const handleNext = async () => {
-    // Only validate the fields present in Step 1
-    const isStepValid = await trigger(["fullName", "gender", "dateOfBirth", "age", "country", "state", "city", "maritalStatus"] as any);
+    const isStepValid = await trigger([
+      "fullName",
+      "gender",
+      "dateOfBirth",
+      "age",
+      "country",
+      "state",
+      "city",
+      "maritalStatus",
+    ] as (keyof Step1FormValues)[]);
     if (isStepValid) {
       onNext();
     }
@@ -71,7 +141,10 @@ export function Step1({ onNext }: { onNext: () => void }) {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-700">
+          <label
+            htmlFor="dateOfBirth"
+            className="text-sm font-medium text-gray-700"
+          >
             Date of Birth
           </label>
           <input
@@ -106,9 +179,57 @@ export function Step1({ onNext }: { onNext: () => void }) {
         )}
       </div>
 
+      {/* ─── Location Detection ─── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700">Location</span>
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={locationStatus === "loading"}
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed border border-blue-100"
+          >
+            {locationStatus === "loading" ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Detecting…
+              </>
+            ) : locationStatus === "success" ? (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Detected
+              </>
+            ) : (
+              <>
+                <MapPin className="h-3.5 w-3.5" />
+                Auto-detect
+              </>
+            )}
+          </button>
+        </div>
+
+        {locationStatus === "success" && detectedArea && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-100 rounded-lg text-xs text-green-700">
+            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>
+              Detected area: <strong>{detectedArea}</strong>
+            </span>
+          </div>
+        )}
+
+        {locationStatus === "error" && locationError && (
+          <div className="px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700">
+            {locationError}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-4 space-y-0">
         <div className="space-y-1.5">
-          <label htmlFor="country" className="text-sm font-medium text-gray-700">
+          <label
+            htmlFor="country"
+            className="text-sm font-medium text-gray-700"
+          >
             Country
           </label>
           <select

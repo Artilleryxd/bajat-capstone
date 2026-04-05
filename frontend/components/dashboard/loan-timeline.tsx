@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 interface TimelineData {
   month: string
@@ -24,6 +25,8 @@ interface LoanTimelineProps {
 }
 
 export function LoanTimeline({ data, className }: LoanTimelineProps) {
+  const { formatCurrency, currencySymbol } = useCurrency()
+
   return (
     <Card className={cn("", className)}>
       <CardHeader className="pb-2">
@@ -41,11 +44,11 @@ export function LoanTimeline({ data, className }: LoanTimelineProps) {
               />
               <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `$${value / 1000}k`}
+                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
                 className="text-muted-foreground"
               />
               <Tooltip
-                formatter={(value: number) => `$${value.toLocaleString()}`}
+                formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   border: "1px solid var(--border)",

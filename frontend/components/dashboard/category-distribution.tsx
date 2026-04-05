@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 interface CategoryData {
   name: string
@@ -18,6 +19,7 @@ interface CategoryDistributionProps {
 }
 
 export function CategoryDistribution({ data, className }: CategoryDistributionProps) {
+  const { formatCurrency } = useCurrency()
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
   return (
@@ -45,7 +47,7 @@ export function CategoryDistribution({ data, className }: CategoryDistributionPr
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => `$${value.toLocaleString()}`}
+                  formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{
                     backgroundColor: "var(--card)",
                     border: "1px solid var(--border)",
@@ -75,14 +77,14 @@ export function CategoryDistribution({ data, className }: CategoryDistributionPr
                     {category.percentage}%
                   </Badge>
                   <span className="font-medium text-sm w-20 text-right">
-                    ${category.value.toLocaleString()}
+                    {formatCurrency(category.value)}
                   </span>
                 </div>
               </div>
             ))}
             <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
               <span className="font-semibold">Total</span>
-              <span className="font-bold">${total.toLocaleString()}</span>
+              <span className="font-bold">{formatCurrency(total)}</span>
             </div>
           </div>
         </div>

@@ -18,6 +18,7 @@ class ProfileService:
                 "date_of_birth": request.date_of_birth,
                 "country": request.country,
                 "city": request.city,
+                "neighbourhood": request.neighbourhood,
                 "currency": request.currency,
                 "marital_status": request.marital_status,
                 "num_dependents": request.num_dependents,
