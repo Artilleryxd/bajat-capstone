@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
+import { useDropzone } from "react-dropzone"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,45 +14,204 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { PenLine, FileSpreadsheet, FileText, Camera, Upload, Sparkles } from "lucide-react"
+import { PenLine, FileSpreadsheet, FileText, Camera, Upload, Sparkles, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getToken } from "@/lib/auth"
+import type { ParsedExpense, ExpenseCategory } from "@/lib/types/expense"
 
 interface ExpenseInputProps {
   className?: string
-  onAddExpense?: (expense: { amount: string; description: string; category: string }) => void
+  onManualAdded?: () => void
+  onParseComplete?: (expenses: ParsedExpense[]) => void
 }
 
-export function ExpenseInput({ className, onAddExpense }: ExpenseInputProps) {
+type UploadStatus = "idle" | "uploading" | "processing" | "done" | "error"
+
+export function ExpenseInput({ className, onManualAdded, onParseComplete }: ExpenseInputProps) {
+  // Manual form state
   const [amount, setAmount] = useState("")
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState("")
-  const [dragActive, setDragActive] = useState(false)
+  const [category, setCategory] = useState<ExpenseCategory | "">("")
+  const [manualLoading, setManualLoading] = useState(false)
+  const [manualError, setManualError] = useState("")
 
-  const handleSubmit = () => {
-    if (amount && description) {
-      onAddExpense?.({ amount, description, category })
+  // Upload state
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle")
+  const [uploadMessage, setUploadMessage] = useState("")
+  const [uploadFileName, setUploadFileName] = useState("")
+
+  const handleManualSubmit = async () => {
+    if (!amount || !description) return
+    setManualLoading(true)
+    setManualError("")
+
+    try {
+      const token = getToken()
+      const res = await fetch("/api/expenses/manual", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: parseFloat(amount),
+          description,
+          category: category || "needs",
+          expense_date: new Date().toISOString().split("T")[0],
+        }),
+      })
+
+      if (!res.ok) throw new Error("Failed to add expense")
+
       setAmount("")
       setDescription("")
       setCategory("")
+      onManualAdded?.()
+    } catch (err) {
+      setManualError(err instanceof Error ? err.message : "Failed to add expense")
+    } finally {
+      setManualLoading(false)
     }
   }
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true)
-    } else if (e.type === "dragleave") {
-      setDragActive(false)
-    }
+  const handleFileUpload = useCallback(
+    async (file: File, fileType: string) => {
+      setUploadStatus("uploading")
+      setUploadFileName(file.name)
+      setUploadMessage("Uploading file...")
+
+      try {
+        const token = getToken()
+        const formData = new FormData()
+        formData.append("file", file)
+        formData.append("file_type", fileType)
+
+        setUploadStatus("processing")
+        setUploadMessage("AI is parsing and categorizing your expenses...")
+
+        const res = await fetch("/api/expenses/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}))
+          throw new Error(errData.error || errData.detail?.message || "Upload failed")
+        }
+
+        const data = await res.json()
+        const expenses: ParsedExpense[] = (data.expenses || []).map(
+          (e: Record<string, unknown>) => ({
+            id: e.id as string,
+            description: e.description as string,
+            amount: e.amount as number,
+            date: (e.date as string) || "",
+            category: (e.category as ExpenseCategory) || null,
+            subcategory: (e.subcategory as string) || null,
+            confidence: (e.confidence as number) || null,
+            merchant: (e.merchant as string) || null,
+            source: (e.source as string) || fileType,
+            user_override: false,
+          })
+        )
+
+        setUploadStatus("done")
+        setUploadMessage(`Parsed ${expenses.length} transactions`)
+        onParseComplete?.(expenses)
+
+        // Reset after 3 seconds
+        setTimeout(() => {
+          setUploadStatus("idle")
+          setUploadMessage("")
+          setUploadFileName("")
+        }, 3000)
+      } catch (err) {
+        setUploadStatus("error")
+        setUploadMessage(err instanceof Error ? err.message : "Upload failed")
+      }
+    },
+    [onParseComplete]
+  )
+
+  const csvDropzone = useDropzone({
+    accept: {
+      "text/csv": [".csv"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+      "application/vnd.ms-excel": [".xls"],
+    },
+    maxSize: 10 * 1024 * 1024,
+    multiple: false,
+    onDrop: (files) => {
+      if (files[0]) {
+        const ext = files[0].name.split(".").pop()?.toLowerCase()
+        handleFileUpload(files[0], ext === "csv" ? "csv" : "excel")
+      }
+    },
+  })
+
+  const pdfDropzone = useDropzone({
+    accept: { "application/pdf": [".pdf"] },
+    maxSize: 10 * 1024 * 1024,
+    multiple: false,
+    onDrop: (files) => {
+      if (files[0]) handleFileUpload(files[0], "pdf")
+    },
+  })
+
+  const imageDropzone = useDropzone({
+    accept: { "image/*": [".jpg", ".jpeg", ".png", ".webp"] },
+    maxSize: 10 * 1024 * 1024,
+    multiple: false,
+    onDrop: (files) => {
+      if (files[0]) handleFileUpload(files[0], "image")
+    },
+  })
+
+  const statusIcon = {
+    idle: null,
+    uploading: <Loader2 className="w-5 h-5 animate-spin text-primary" />,
+    processing: <Sparkles className="w-5 h-5 animate-pulse text-amber-500" />,
+    done: <CheckCircle2 className="w-5 h-5 text-green-500" />,
+    error: <AlertCircle className="w-5 h-5 text-destructive" />,
   }
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-    // Handle file drop - simulated
-  }
+  const renderDropZone = (
+    dropzone: ReturnType<typeof useDropzone>,
+    icon: React.ReactNode,
+    title: string,
+    subtitle: string,
+    buttonLabel: string
+  ) => (
+    <div
+      {...dropzone.getRootProps()}
+      className={cn(
+        "border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer",
+        "hover:border-primary/50 hover:bg-primary/5",
+        dropzone.isDragActive ? "border-primary bg-primary/5 scale-[1.01]" : "border-border"
+      )}
+    >
+      <input {...dropzone.getInputProps()} />
+
+      {uploadStatus !== "idle" && uploadFileName ? (
+        <div className="flex flex-col items-center gap-3">
+          {statusIcon[uploadStatus]}
+          <p className="text-sm font-medium">{uploadFileName}</p>
+          <p className="text-xs text-muted-foreground">{uploadMessage}</p>
+        </div>
+      ) : (
+        <>
+          <div className="mx-auto mb-4 text-muted-foreground">{icon}</div>
+          <p className="text-sm text-muted-foreground mb-2">{title}</p>
+          <p className="text-xs text-muted-foreground mb-4">{subtitle}</p>
+          <Button variant="outline" type="button" onClick={(e) => e.stopPropagation()}>
+            <Upload className="w-4 h-4 mr-2" />
+            {buttonLabel}
+          </Button>
+        </>
+      )}
+    </div>
+  )
 
   return (
     <Card className={cn("", className)}>
@@ -85,13 +245,13 @@ export function ExpenseInput({ className, onAddExpense }: ExpenseInputProps) {
           <TabsContent value="manual" className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
+                <Label htmlFor="expense-amount">Amount</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
+                    ₹
                   </span>
                   <Input
-                    id="amount"
+                    id="expense-amount"
                     type="number"
                     placeholder="0.00"
                     className="pl-7"
@@ -101,9 +261,9 @@ export function ExpenseInput({ className, onAddExpense }: ExpenseInputProps) {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
+                <Label htmlFor="expense-category">Category</Label>
+                <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
+                  <SelectTrigger id="expense-category">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -116,97 +276,59 @@ export function ExpenseInput({ className, onAddExpense }: ExpenseInputProps) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="expense-description">Description</Label>
               <Input
-                id="description"
-                placeholder="e.g., Grocery shopping at Whole Foods"
+                id="expense-description"
+                placeholder="e.g., Grocery shopping at BigBazaar"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
-            <Button onClick={handleSubmit} className="w-full sm:w-auto">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Add Expense
+            {manualError && (
+              <p className="text-sm text-destructive">{manualError}</p>
+            )}
+            <Button
+              onClick={handleManualSubmit}
+              disabled={!amount || !description || manualLoading}
+              className="w-full sm:w-auto"
+            >
+              {manualLoading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-2" />
+              )}
+              {manualLoading ? "Adding..." : "Add Expense"}
             </Button>
           </TabsContent>
 
           <TabsContent value="spreadsheet">
-            <div
-              className={cn(
-                "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-                dragActive ? "border-primary bg-primary/5" : "border-border"
-              )}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <FileSpreadsheet className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground mb-2">
-                Drag and drop your Excel or CSV file here
-              </p>
-              <p className="text-xs text-muted-foreground mb-4">or</p>
-              <Button variant="outline">
-                <Upload className="w-4 h-4 mr-2" />
-                Browse Files
-              </Button>
-            </div>
+            {renderDropZone(
+              csvDropzone,
+              <FileSpreadsheet className="w-12 h-12" />,
+              "Drag and drop your Excel or CSV file here",
+              "AI will automatically map columns and categorize expenses",
+              "Browse Files"
+            )}
           </TabsContent>
 
           <TabsContent value="pdf">
-            <div
-              className={cn(
-                "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-                dragActive ? "border-primary bg-primary/5" : "border-border"
-              )}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground mb-2">
-                Upload your bank statement or expense PDF
-              </p>
-              <p className="text-xs text-muted-foreground mb-4">
-                AI will automatically extract and categorize expenses
-              </p>
-              <Button variant="outline">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload PDF
-              </Button>
-            </div>
+            {renderDropZone(
+              pdfDropzone,
+              <FileText className="w-12 h-12" />,
+              "Upload your bank statement or expense PDF",
+              "AI will extract and categorize transactions automatically",
+              "Upload PDF"
+            )}
           </TabsContent>
 
           <TabsContent value="receipt">
-            <div
-              className={cn(
-                "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-                dragActive ? "border-primary bg-primary/5" : "border-border"
-              )}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <Camera className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground mb-2">
-                Take a photo or upload an image of your receipt
-              </p>
-              <p className="text-xs text-muted-foreground mb-4">
-                AI will extract the amount and categorize it automatically
-              </p>
-              <div className="flex justify-center gap-2">
-                <Button variant="outline">
-                  <Camera className="w-4 h-4 mr-2" />
-                  Take Photo
-                </Button>
-                <Button variant="outline">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Image
-                </Button>
-              </div>
-            </div>
+            {renderDropZone(
+              imageDropzone,
+              <Camera className="w-12 h-12" />,
+              "Upload an image of your receipt",
+              "AI will extract the amount and categorize it automatically",
+              "Upload Image"
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>

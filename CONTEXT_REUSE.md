@@ -55,26 +55,42 @@ It may recommend asset class allocations only.
 - Frontend: `frontend/`
 
 ### Backend
-- `backend/main.py`
-- `backend/requirements.txt`
-- `backend/db/`
+- `backend/main.py` — FastAPI app, registers auth, profile, expenses routers
+- `backend/requirements.txt` — includes pandas, pdfplumber, pytesseract, Pillow, python-multipart, openpyxl
+- `backend/db/supabase_client.py` — `supabase` (anon) and `supabase_admin` (service role) clients
 - `backend/db/migrations/`
-- `backend/routes/`
-- `backend/schemas/`
-- `backend/services/`
-- `backend/utils/`
+- `backend/routes/auth.py` — signup, login, forgot-password
+- `backend/routes/profile.py` — user profile CRUD
+- `backend/routes/expenses.py` — POST manual, POST upload, POST confirm, GET /{month_year}
+- `backend/schemas/auth_schema.py`
+- `backend/schemas/profile_schema.py`
+- `backend/schemas/expense_schema.py` — ManualExpenseCreate, ParsedExpense, ConfirmExpensesRequest, ExpenseResponse
+- `backend/services/auth_service.py`
+- `backend/services/profile_service.py`
+- `backend/services/ai_categorizer.py` — Claude Haiku batch categorization, CSV column mapping, text extraction
+- `backend/services/file_parser.py` — CSV/Excel (pandas), PDF (pdfplumber), image (pytesseract) parsing
+- `backend/services/expense_service.py` — manual create, upload processing, bulk confirm, monthly fetch
+- `backend/utils/jwt_verifier.py` — `get_current_user` dependency
 
 ### Frontend
-- `frontend/app/`
-- `frontend/components/`
+- `frontend/app/` — pages and API proxy routes
+- `frontend/app/api/expenses/manual/route.ts` — proxies to FastAPI POST /v1/expenses/manual
+- `frontend/app/api/expenses/upload/route.ts` — proxies multipart upload to FastAPI POST /v1/expenses/upload
+- `frontend/app/api/expenses/confirm/route.ts` — proxies to FastAPI POST /v1/expenses/confirm
+- `frontend/app/api/expenses/[monthYear]/route.ts` — proxies to FastAPI GET /v1/expenses/{month_year}
+- `frontend/components/` — dashboard and UI components
 - `frontend/hooks/`
-- `frontend/lib/`
+- `frontend/lib/auth.ts` — getToken, setToken, logout (localStorage)
+- `frontend/lib/config.ts` — API_BASE_URL
+- `frontend/lib/constants.ts` — CATEGORY_COLORS, CATEGORY_LABELS
+- `frontend/lib/types/expense.ts` — ExpenseCategory, ParsedExpense, ExpenseRecord, ExpenseSummary
 - `frontend/public/`
 - `frontend/styles/`
 
 ## Existing Migrations
 - `backend/db/migrations/001_user_profiles_allow_pre_onboarding_nulls.sql`
 - `backend/db/migrations/002_user_profiles_add_gender.sql`
+- `backend/db/migrations/005_expenses_table.sql` — expenses table with RLS, indexes
 
 ## Existing Frontend Routes
 - `app/page.tsx`
@@ -94,8 +110,10 @@ It may recommend asset class allocations only.
 - `components/dashboard/ai-chat-panel.tsx`
 - `components/dashboard/asset-allocation-chart.tsx`
 - `components/dashboard/budget-cards.tsx`
-- `components/dashboard/category-distribution.tsx`
-- `components/dashboard/expense-table.tsx`
+- `components/dashboard/category-distribution.tsx` — pie chart + category list (recharts)
+- `components/dashboard/dashboard-layout.tsx` — sidebar + top-nav wrapper
+- `components/dashboard/expense-input.tsx` — manual form + drag-and-drop file upload (react-dropzone)
+- `components/dashboard/expense-table.tsx` — category override dropdown, confidence/source badges
 - `components/dashboard/investment-allocation-chart.tsx`
 - `components/dashboard/loan-cards.tsx`
 - `components/dashboard/sidebar.tsx`
@@ -105,11 +123,16 @@ It may recommend asset class allocations only.
 - `components/theme-provider.tsx`
 - UI primitives under `components/ui/`
 
+## Expense Module Pipeline
+Upload → Next.js API proxy → FastAPI → Parse (pandas/pdfplumber/pytesseract) → AI categorize (Claude Haiku) → Return preview → User overrides categories → Confirm → Bulk insert to Supabase `expenses` table.
+
+Manual entry: form → API proxy → FastAPI → optional AI categorization → DB insert → refresh list.
+
 ## Current Working Context
 - The workspace is on Linux.
 - The active repository is `/home/artillery/Coding/bajat-capstone`.
 - This is a dirty or active development workspace, so existing user changes should be preserved.
-- The current editor file was `/home/artillery/Coding/bajat-capstone/backend/.env` when this context was captured.
+- Backend `.env` requires: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`.
 
 ## Reusable Starter Prompt
 Use this in a future session if you want a compact handoff:
