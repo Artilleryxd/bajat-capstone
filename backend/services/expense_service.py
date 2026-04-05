@@ -183,8 +183,17 @@ async def process_upload(user_id: str, file: UploadFile, file_type: str) -> list
                 t["merchant"] = ai_data.get("merchant")
             t["source"] = file_type if file_type != "excel" else "csv"
 
-        logger.info("Processed %d transactions from %s upload", len(parsed_transactions), file_type)
-        return parsed_transactions
+        # Filter out income items (salary, deposits, refunds, etc.)
+        expense_only = [
+            t for t in parsed_transactions
+            if t.get("category") != "income"
+        ]
+        income_count = len(parsed_transactions) - len(expense_only)
+        if income_count > 0:
+            logger.info("Filtered out %d income transactions", income_count)
+
+        logger.info("Processed %d expense transactions from %s upload", len(expense_only), file_type)
+        return expense_only
 
     finally:
         # Clean up temp file

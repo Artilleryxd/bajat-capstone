@@ -40,17 +40,24 @@ def parse_csv(filepath: str, column_mapping: Optional[dict] = None) -> list[dict
     transactions: list[dict] = []
     for _, row in df.iterrows():
         try:
-            # Get amount from debit column, or fallback to credit
+            # Only use debit/withdrawal column — credit rows are income, not expenses
             amount = None
+            is_credit = False
+
             if mapping.get("debit") and mapping["debit"] in df.columns:
                 val = row.get(mapping["debit"])
-                if pd.notna(val):
+                if pd.notna(val) and float(val) != 0:
                     amount = abs(float(val))
 
-            if amount is None and mapping.get("credit") and mapping["credit"] in df.columns:
-                val = row.get(mapping["credit"])
-                if pd.notna(val):
-                    amount = abs(float(val))
+            # Check if this row is a credit (income) entry
+            if mapping.get("credit") and mapping["credit"] in df.columns:
+                credit_val = row.get(mapping["credit"])
+                if pd.notna(credit_val) and float(credit_val) != 0:
+                    is_credit = True
+
+            # Skip credit-only rows (salary, deposits, refunds = income)
+            if is_credit and amount is None:
+                continue
 
             if amount is None or amount == 0:
                 continue

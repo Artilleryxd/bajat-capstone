@@ -31,18 +31,19 @@ def categorize_expenses_batch(expenses: list[dict]) -> list[dict]:
     if not expenses:
         return []
 
-    prompt = f"""Categorize each expense into one of these categories: needs, wants, desires, investments.
+    prompt = f"""Categorize each transaction into one of these categories: needs, wants, desires, investments, income.
 
 Definitions:
 - needs: Essential living expenses (rent, groceries, utilities, medicine, transport, insurance)
 - wants: Non-essential but common spending (dining out, streaming, casual shopping, coffee)
 - desires: Luxury or aspirational spending (travel, gadgets, premium brands, entertainment)
 - investments: Financial growth (SIP, stocks, FD, PPF, NPS, mutual funds, crypto)
+- income: Salary credits, deposits, refunds, cashback, interest received, or any money coming IN
 
 Return ONLY a JSON array. No other text, no markdown, no explanation.
 Each item must have: "id" (string), "category" (string), "subcategory" (string), "confidence" (float 0-1), "merchant" (string or null)
 
-Expenses:
+Transactions:
 {json.dumps(expenses, separators=(',', ':'))}"""
 
     try:
@@ -106,10 +107,12 @@ def ai_parse_statement_text(text: str) -> list[dict]:
     Use Haiku to extract transactions from raw text (PDF or OCR).
     Returns list of dicts with: description, amount, date.
     """
-    prompt = f"""Extract all financial transactions from this text. Return ONLY a JSON array, no other text.
+    prompt = f"""Extract all EXPENSE transactions from this text. Return ONLY a JSON array, no other text.
 Each item: {{ "description": str, "amount": float (positive number), "date": "YYYY-MM-DD" or null }}
 
-Only include actual transactions (purchases, payments, transfers). Skip headers, totals, and balances.
+Only include actual EXPENSE transactions (purchases, payments, withdrawals, transfers OUT).
+DO NOT include income items such as: salary credits, deposits, refunds, cashback, interest received.
+Skip headers, totals, and balances.
 If you cannot determine the date, use null.
 
 Text:
