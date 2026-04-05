@@ -7,7 +7,7 @@ export const currencyMap: Record<string, string> = {
   AE: "د.إ", // United Arab Emirates
   SG: "S$", // Singapore
   // Note: For Europe, you might handle it per country dynamically, but we'll add a default mapping format here
-  AT: "€", BE: "€", CY: "€", EE: "€", EE: "€", FI: "€", FR: "€", DE: "€",
+  AT: "€", BE: "€", CY: "€", EE: "€", FI: "€", FR: "€", DE: "€",
   GR: "€", IE: "€", IT: "€", LV: "€", LT: "€", LU: "€", MT: "€", NL: "€",
   PT: "€", SK: "€", SI: "€", ES: "€"
 };

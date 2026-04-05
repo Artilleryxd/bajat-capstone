@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/expenses", icon: Receipt, label: "Expense Tracking" },
   { href: "/budget", icon: Calculator, label: "Smart Budget Planner" },
   { href: "/loans", icon: Landmark, label: "Loan Optimization" },
