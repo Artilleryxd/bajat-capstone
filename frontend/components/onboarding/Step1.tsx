@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { Step1FormValues } from "@/lib/validation/onboardingSchema";
 import { Country, State } from "country-state-city";
@@ -19,6 +19,20 @@ export function Step1({ onNext }: { onNext: () => void }) {
   } = useFormContext<Step1FormValues>();
 
   const selectedCountry = watch("country");
+  const dateOfBirth = watch("dateOfBirth");
+
+  useEffect(() => {
+    if (dateOfBirth) {
+      const today = new Date();
+      const birthDate = new Date(dateOfBirth);
+      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        calculatedAge--;
+      }
+      setValue("age", calculatedAge, { shouldValidate: true });
+    }
+  }, [dateOfBirth, setValue]);
 
   const countries = useMemo(() => Country.getAllCountries(), []);
   const states = useMemo(() => {
@@ -182,7 +196,7 @@ export function Step1({ onNext }: { onNext: () => void }) {
       {/* ─── Location Detection ─── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">Location</span>
+          <span className="text-sm font-medium text-gray-700">Current Neighbourhood</span>
           <button
             type="button"
             onClick={handleDetectLocation}

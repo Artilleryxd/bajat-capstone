@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Send, Sparkles, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 
 interface Message {
   id: string
@@ -31,6 +32,7 @@ export function AIChatPanel({
 }: AIChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState("")
+  const { formatCurrency } = useCurrency()
 
   const handleSend = () => {
     if (!input.trim()) return
@@ -64,7 +66,7 @@ export function AIChatPanel({
       return "I've analyzed your income and expenses. A 50/30/20 budget would work well for your situation: 50% needs, 30% wants, and 20% savings/investments. Want me to customize this based on your goals?"
     }
     if (lowerInput.includes("loan") || lowerInput.includes("debt")) {
-      return "Looking at your loans, the avalanche method would save you $2,340 in interest over the next 3 years. Focus on the high-interest credit card first, then move to the car loan. I can create a detailed payoff schedule for you."
+      return `Looking at your loans, the avalanche method would save you ${formatCurrency(2340)} in interest over the next 3 years. Focus on the high-interest credit card first, then move to the car loan. I can create a detailed payoff schedule for you.`
     }
     return "I can help you optimize your finances. You could ask me about saving strategies, investment allocation, budget planning, or debt management. What would you like to explore?"
   }

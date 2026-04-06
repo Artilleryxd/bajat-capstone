@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, logout } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import { CurrencyProvider } from "@/lib/hooks/useCurrency";
+import { getCurrencyCode } from "@/lib/utils/countryToCurrency";
 
 export default function DashboardLayout({
   children,
@@ -12,6 +14,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+  const [currencyCode, setCurrencyCode] = useState<string>("USD");
 
   useEffect(() => {
     const verifyAccess = async () => {
@@ -41,6 +44,12 @@ export default function DashboardLayout({
           return;
         }
 
+        if (profile.currency) {
+          setCurrencyCode(profile.currency);
+        } else if (profile.country) {
+          setCurrencyCode(getCurrencyCode(profile.country));
+        }
+
         setIsCheckingAccess(false);
       } catch {
         logout();
@@ -55,5 +64,9 @@ export default function DashboardLayout({
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <CurrencyProvider currencyCode={currencyCode}>
+      {children}
+    </CurrencyProvider>
+  );
 }
