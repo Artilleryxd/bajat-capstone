@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { Step1FormValues } from "@/lib/validation/onboardingSchema";
 import { Country, State } from "country-state-city";
-import { detectUserLocation, ReverseGeoResult } from "@/lib/utils/geolocation";
+import { detectUserLocation, searchAddressLocation, ReverseGeoResult } from "@/lib/utils/geolocation";
 import { MapPin, Loader2, CheckCircle2 } from "lucide-react";
 
 type LocationStatus = "idle" | "loading" | "success" | "error";
@@ -41,16 +41,38 @@ export function Step1({ onNext }: { onNext: () => void }) {
 
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [locationError, setLocationError] = useState("");
-  const [detectedArea, setDetectedArea] = useState("");
+  
+  const [searchResults, setSearchResults] = useState<ReverseGeoResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  
+  const neighbourhoodValue = watch("neighbourhood");
+  
+  useEffect(() => {
+    if (!neighbourhoodValue || neighbourhoodValue.length < 3) {
+      setSearchResults([]);
+      return;
+    }
 
-  const handleDetectLocation = useCallback(async () => {
-    setLocationStatus("loading");
-    setLocationError("");
+    const timeoutId = setTimeout(async () => {
+      if (!showResults) return;
 
-    try {
-      const result: ReverseGeoResult = await detectUserLocation();
+      setIsSearching(true);
+      try {
+        const results = await searchAddressLocation(neighbourhoodValue);
+        setSearchResults(results);
+      } catch (err) {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
 
-      // Auto-fill country if we got a valid country code
+    return () => clearTimeout(timeoutId);
+  }, [neighbourhoodValue, showResults]);
+
+  const applyGeoResultToForm = useCallback(
+    (result: ReverseGeoResult) => {
       if (result.countryCode) {
         const matchedCountry = countries.find(
           (c) => c.isoCode === result.countryCode
@@ -58,9 +80,7 @@ export function Step1({ onNext }: { onNext: () => void }) {
         if (matchedCountry) {
           setValue("country", matchedCountry.isoCode, { shouldValidate: true });
 
-          // Auto-fill state if available
           if (result.state) {
-            // Small delay to let states list populate from country change
             setTimeout(() => {
               const countryStates = State.getStatesOfCountry(matchedCountry.isoCode);
               const matchedState = countryStates.find(
@@ -76,18 +96,28 @@ export function Step1({ onNext }: { onNext: () => void }) {
         }
       }
 
-      // Auto-fill city
       if (result.city) {
         setValue("city", result.city, { shouldValidate: true });
       }
 
-      // Auto-fill neighbourhood
       if (result.neighbourhood) {
         setValue("neighbourhood", result.neighbourhood, { shouldValidate: true });
-        setDetectedArea(result.neighbourhood);
       } else if (result.city) {
-        setDetectedArea(result.city);
+        setValue("neighbourhood", result.city, { shouldValidate: true });
+      } else {
+        setValue("neighbourhood", result.displayName.split(",")[0], { shouldValidate: true });
       }
+    },
+    [countries, setValue]
+  );
+
+  const handleDetectLocation = useCallback(async () => {
+    setLocationStatus("loading");
+    setLocationError("");
+
+    try {
+      const result: ReverseGeoResult = await detectUserLocation();
+      applyGeoResultToForm(result);
 
       setLocationStatus("success");
     } catch (err) {
@@ -95,7 +125,13 @@ export function Step1({ onNext }: { onNext: () => void }) {
       setLocationError(message);
       setLocationStatus("error");
     }
-  }, [countries, setValue]);
+  }, [applyGeoResultToForm]);
+
+  const handleSelectAddress = (result: ReverseGeoResult) => {
+    setShowResults(false);
+    applyGeoResultToForm(result);
+  };
+
 
   const handleNext = async () => {
     const isStepValid = await trigger([
@@ -193,10 +229,12 @@ export function Step1({ onNext }: { onNext: () => void }) {
         )}
       </div>
 
-      {/* ─── Location Detection ─── */}
-      <div className="space-y-3">
+      {/* ─── Address ─── */}
+      <div className="space-y-3 relative">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">Current Neighbourhood</span>
+          <label htmlFor="neighbourhood" className="text-sm font-medium text-gray-700">
+            Current Address (Building/Locality)
+          </label>
           <button
             type="button"
             onClick={handleDetectLocation}
@@ -222,14 +260,38 @@ export function Step1({ onNext }: { onNext: () => void }) {
           </button>
         </div>
 
-        {locationStatus === "success" && detectedArea && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-100 rounded-lg text-xs text-green-700">
-            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-            <span>
-              Detected area: <strong>{detectedArea}</strong>
-            </span>
-          </div>
-        )}
+        <div className="relative">
+          <input
+            id="neighbourhood"
+            {...register("neighbourhood", {
+              onChange: (e) => setShowResults(true)
+            })}
+            onFocus={() => setShowResults(true)}
+            onBlur={() => setTimeout(() => setShowResults(false), 200)}
+            placeholder="e.g. 123 Main St, Apartment 4B"
+            className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            autoComplete="off"
+          />
+
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-3 h-5 w-5 animate-spin text-gray-400" />
+          )}
+
+          {showResults && searchResults.length > 0 && (
+            <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none text-sm">
+              {searchResults.map((result, index) => (
+                <li
+                  key={index}
+                  onClick={() => handleSelectAddress(result)}
+                  className="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-blue-50 text-gray-900"
+                >
+                  <span className="block truncate font-medium">{result.displayName.split(',')[0]}</span>
+                  <span className="block truncate text-xs text-gray-500">{result.displayName}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         {locationStatus === "error" && locationError && (
           <div className="px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700">

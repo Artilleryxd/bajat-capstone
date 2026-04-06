@@ -130,3 +130,62 @@ export async function detectUserLocation(): Promise<ReverseGeoResult> {
   const coords = await getBrowserLocation();
   return reverseGeocode(coords.latitude, coords.longitude);
 }
+
+/**
+ * Forward-geocodes an address query using OpenStreetMap Nominatim.
+ */
+export async function searchAddressLocation(
+  query: string
+): Promise<ReverseGeoResult[]> {
+  if (!query || query.trim().length < 3) return [];
+
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+    query
+  )}&format=json&addressdetails=1&limit=5`;
+
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "FinSightAI/1.0 (onboarding-geolocation)",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Address search failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  return data.map((item: any) => {
+    const address: NominatimAddress = item.address || {};
+    
+    const neighbourhood =
+      address.neighbourhood ||
+      address.suburb ||
+      address.quarter ||
+      address.city_district ||
+      address.village ||
+      address.hamlet ||
+      null;
+
+    const city =
+      address.city ||
+      address.town ||
+      address.municipality ||
+      null;
+
+    const state =
+      address.state ||
+      address.state_district ||
+      null;
+
+    return {
+      neighbourhood,
+      city,
+      state,
+      country: address.country || null,
+      countryCode: address.country_code?.toUpperCase() || null,
+      displayName: item.display_name || "",
+    };
+  });
+}
+
