@@ -2,7 +2,7 @@
 
 ---
 
-## Loan Optimisation Engine (v2 — Advanced)
+## Loan Optimisation Engine (v3 — Fixed)
 
 ### Overview
 
@@ -22,14 +22,24 @@ performs calculations or overrides algorithmic results.
 
 #### Hybrid
 - AI-selected based on DTI ratio, number of loans, and user profile
-- Not yet implemented — reserved for v3
+- Not yet implemented — reserved for future version
 
 ### Core Simulation Rules
 - MUST simulate month-by-month amortization — no approximations
 - Minimum EMI constraint enforced on all loans every month
-- Monthly surplus (income − all EMIs) allocated dynamically to priority loan
-- When a loan closes, surplus cascades to next priority loan
+- `monthly_budget` = total money available per month for all loan payments
+  - Computed as `max(sum_of_all_emis, monthly_income)`
+- Extra = `monthly_budget - sum(active_loan_emis)` — recalculated every month
+- When a loan closes, its EMI frees up automatically (it leaves the active list, so next month's extra grows)
+- Priority loan (by strategy ordering) receives all extra each month
+- If priority loan closes mid-month, leftover cascades to next priority loan
 - Simulation stops when all balances reach zero or 600 months (whichever first)
+
+### Baseline (for "savings" metrics)
+- Each loan pays its own EMI independently — NO reallocation when a loan closes
+- `total_saved` = baseline interest − best strategy interest
+- `months_saved` = baseline months − best strategy months
+- This shows the real value of using any strategy vs. doing nothing
 
 ### Output Schema (STRICT)
 
@@ -55,13 +65,20 @@ performs calculations or overrides algorithmic results.
 }
 ```
 
+### API Response includes
+- `total_saved` / `months_saved` — vs baseline (no-strategy) scenario
+- `interest_diff` / `months_diff` — between avalanche and snowball
+- `monthly_surplus` — income minus total EMIs (0 if income <= EMIs)
+
 ### AI Responsibilities
 
 AI MAY:
 - Explain why the chosen strategy is optimal
 - Mention interest saved and time saved in concrete numbers
+- Mention the difference between avalanche and snowball strategies
 - Briefly address refinancing if highest rate > 12%
-- Briefly address invest-vs-prepay if surplus > 2× EMIs and max rate < 10%
+- Briefly address invest-vs-prepay if surplus > 2x EMIs and max rate < 10%
+- If surplus is 0, explain that strategies produce similar results without extra and suggest creating surplus
 
 AI MUST NOT:
 - Perform any calculations
@@ -84,11 +101,18 @@ Override conditions:
 - Full schedule stored in `loan_strategies.strategy_data.full_schedule` (JSONB)
 - Yearly timeline aggregated for chart rendering
 
+### Frontend Layout Order
+1. Header + Optimize button
+2. Summary metrics (Total Debt, Monthly Payments, Interest Saved, Months Saved)
+3. **Your Loans** section (add form + loan cards)
+4. **Optimization Results** (strategy cards, comparison chart, AI insights at bottom)
+5. Payoff Timeline
+
 ### Key Files
 
 | File | Role |
 |------|------|
-| `backend/services/loan_optimizer.py` | Deterministic simulation — no AI, no DB |
+| `backend/services/loan_optimizer.py` | Deterministic simulation — `_simulate` (strategy), `_baseline` (no-strategy), `optimize_loans` (orchestrator) |
 | `backend/services/ai_service.py` | All Anthropic calls (Sonnet for reasoning) |
 | `backend/services/context_builder.py` | Compact context assembly for AI prompts |
 | `backend/routes/loans.py` | REST: GET /v1/loans, POST /v1/loans, POST /v1/loans/optimize |

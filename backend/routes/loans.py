@@ -99,12 +99,10 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
         ]
 
         total_emi = sum(l.emi_amount for l in loans)
-        monthly_surplus = monthly_income - total_emi
 
         # 4. Run deterministic optimization
         result = optimize_loans(
             loans,
-            monthly_surplus=monthly_surplus,
             monthly_income=monthly_income,
         )
 
@@ -115,9 +113,11 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
             total_saved=result["total_saved"],
             months_saved=result["months_saved"],
             highest_rate=highest_rate,
-            monthly_surplus=max(0.0, monthly_surplus),
+            monthly_surplus=result["monthly_surplus"],
             total_emi=total_emi,
             currency=currency,
+            interest_diff=result["interest_diff"],
+            months_diff=result["months_diff"],
         ) or ""
 
         # 6. Deactivate previous strategies, insert new one
@@ -161,6 +161,9 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
             "comparison": result["comparison"],
             "total_saved": result["total_saved"],
             "months_saved": result["months_saved"],
+            "interest_diff": result["interest_diff"],
+            "months_diff": result["months_diff"],
+            "monthly_surplus": result["monthly_surplus"],
             "ai_explanation": ai_explanation,
         }
 

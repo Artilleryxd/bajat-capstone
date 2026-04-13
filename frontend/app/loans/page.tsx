@@ -38,6 +38,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  MessageSquare,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useCurrency } from "@/lib/hooks/useCurrency"
@@ -258,148 +259,20 @@ export default function LoansPage() {
           <MetricCard
             title="Interest Saved"
             value={optimizeResult ? formatCurrency(optimizeResult.total_saved) : "—"}
-            changeLabel={optimizeResult ? "with optimization" : "run optimize to see"}
+            changeLabel={optimizeResult ? "vs minimum payments" : "run optimize to see"}
             icon={TrendingDown}
             iconColor="bg-success/10 text-success"
           />
           <MetricCard
             title="Months Saved"
             value={optimizeResult ? `${optimizeResult.months_saved} mo` : "—"}
+            changeLabel={optimizeResult ? "vs minimum payments" : "run optimize to see"}
             icon={Zap}
             iconColor="bg-chart-3/10 text-chart-3"
           />
         </div>
 
-        {/* Optimization Results */}
-        {optimizeResult && (
-          <div className="space-y-4">
-            {/* Best strategy banner */}
-            <Card className="border-primary/20 bg-primary/5">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className="capitalize bg-primary text-primary-foreground">
-                    {optimizeResult.best_strategy} — Recommended
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    Saves {formatCurrency(optimizeResult.total_saved)} in interest ·{" "}
-                    {optimizeResult.months_saved} months faster
-                  </span>
-                </div>
-              </CardHeader>
-              {optimizeResult.ai_explanation && (
-                <CardContent className="pt-0">
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                    {optimizeResult.ai_explanation}
-                  </p>
-                </CardContent>
-              )}
-            </Card>
-
-            {/* Strategy comparison cards */}
-            <div className="grid gap-4 lg:grid-cols-2">
-              {(["avalanche", "snowball"] as const).map((key) => {
-                const strat = optimizeResult.comparison[key]
-                const isBest = optimizeResult.best_strategy === key
-                return (
-                  <Card key={key} className={isBest ? "border-primary/30" : ""}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        {key === "avalanche" ? (
-                          <Zap className="w-4 h-4 text-chart-3" />
-                        ) : (
-                          <Snowflake className="w-4 h-4 text-chart-2" />
-                        )}
-                        {key.charAt(0).toUpperCase() + key.slice(1)} Method
-                        {isBest && (
-                          <Badge variant="outline" className="ml-auto text-xs">
-                            Best
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      <CardDescription>
-                        {key === "avalanche"
-                          ? "Pay highest-rate loans first — minimises total interest"
-                          : "Pay smallest loans first — builds momentum"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between p-3 rounded-lg bg-muted text-sm">
-                        <span className="text-muted-foreground">Total Interest</span>
-                        <span className="font-semibold">
-                          {formatCurrency(strat.total_interest_paid)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between p-3 rounded-lg bg-muted text-sm">
-                        <span className="text-muted-foreground">Months to Close</span>
-                        <span className="font-semibold">{strat.months_to_close}</span>
-                      </div>
-                      <div className="flex justify-between p-3 rounded-lg bg-muted text-sm">
-                        <span className="text-muted-foreground">Total Payment</span>
-                        <span className="font-semibold">
-                          {formatCurrency(strat.total_payment)}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-
-            {/* Comparison line chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Strategy Comparison</CardTitle>
-                <CardDescription>
-                  Total outstanding balance over time — Avalanche vs Snowball
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={comparisonChartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                      <YAxis
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(v: number) =>
-                          `${currencySymbol}${(v / 1000).toFixed(0)}k`
-                        }
-                      />
-                      <Tooltip
-                        formatter={(value: number) => formatCurrency(value)}
-                        contentStyle={{
-                          backgroundColor: "var(--card)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="avalanche"
-                        name="Avalanche"
-                        stroke="var(--chart-3)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="snowball"
-                        name="Snowball"
-                        stroke="var(--chart-2)"
-                        strokeWidth={2}
-                        dot={false}
-                        strokeDasharray="4 4"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Your Loans */}
+        {/* Your Loans — placed ABOVE optimization results */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Your Loans</h2>
@@ -545,6 +418,155 @@ export default function LoansPage() {
             <LoanCards loans={loans.map(loanToCardFormat)} />
           )}
         </div>
+
+        {/* Optimization Results */}
+        {optimizeResult && (
+          <div className="space-y-4">
+            {/* Strategy comparison cards */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {(["avalanche", "snowball"] as const).map((key) => {
+                const strat = optimizeResult.comparison[key]
+                const isBest = optimizeResult.best_strategy === key
+                return (
+                  <Card key={key} className={isBest ? "border-primary/30" : ""}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        {key === "avalanche" ? (
+                          <Zap className="w-4 h-4 text-chart-3" />
+                        ) : (
+                          <Snowflake className="w-4 h-4 text-chart-2" />
+                        )}
+                        {key.charAt(0).toUpperCase() + key.slice(1)} Method
+                        {isBest && (
+                          <Badge variant="outline" className="ml-auto text-xs">
+                            Best
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription>
+                        {key === "avalanche"
+                          ? "Pay highest-rate loans first — minimises total interest"
+                          : "Pay smallest loans first — builds momentum"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between p-3 rounded-lg bg-muted text-sm">
+                        <span className="text-muted-foreground">Total Interest</span>
+                        <span className="font-semibold">
+                          {formatCurrency(strat.total_interest_paid)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between p-3 rounded-lg bg-muted text-sm">
+                        <span className="text-muted-foreground">Months to Close</span>
+                        <span className="font-semibold">{strat.months_to_close}</span>
+                      </div>
+                      <div className="flex justify-between p-3 rounded-lg bg-muted text-sm">
+                        <span className="text-muted-foreground">Total Payment</span>
+                        <span className="font-semibold">
+                          {formatCurrency(strat.total_payment)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+
+            {/* Comparison line chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Strategy Comparison</CardTitle>
+                <CardDescription>
+                  Total outstanding balance over time — Avalanche vs Snowball
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={comparisonChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(v: number) =>
+                          `${currencySymbol}${(v / 1000).toFixed(0)}k`
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{
+                          backgroundColor: "var(--card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="avalanche"
+                        name="Avalanche"
+                        stroke="var(--chart-3)"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="snowball"
+                        name="Snowball"
+                        stroke="var(--chart-2)"
+                        strokeWidth={2}
+                        dot={false}
+                        strokeDasharray="4 4"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Insights — placed BELOW strategy cards and chart */}
+            {optimizeResult.ai_explanation && (
+              <Card className="border-primary/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    AI Insights
+                  </CardTitle>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className="capitalize bg-primary text-primary-foreground">
+                      {optimizeResult.best_strategy} — Recommended
+                    </Badge>
+                    {optimizeResult.total_saved > 0 && (
+                      <span className="text-sm text-muted-foreground">
+                        Saves {formatCurrency(optimizeResult.total_saved)} in interest
+                        {optimizeResult.months_saved > 0 &&
+                          ` · ${optimizeResult.months_saved} months faster`}
+                      </span>
+                    )}
+                    {optimizeResult.interest_diff > 0 && (
+                      <span className="text-sm text-muted-foreground">
+                        · {formatCurrency(optimizeResult.interest_diff)} less interest than{" "}
+                        {optimizeResult.best_strategy === "avalanche" ? "snowball" : "avalanche"}
+                      </span>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    {optimizeResult.ai_explanation.split("\n\n").map((paragraph, i) => (
+                      <p
+                        key={i}
+                        className="text-sm text-muted-foreground leading-relaxed mb-3 last:mb-0"
+                      >
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
         {/* Payoff Timeline */}
         {timelineData.length > 1 && <LoanTimeline data={timelineData} />}

@@ -54,5 +54,8 @@ export interface OptimizeResult {
   }
   total_saved: number
   months_saved: number
+  interest_diff: number
+  months_diff: number
+  monthly_surplus: number
   ai_explanation: string
 }
