@@ -34,7 +34,7 @@ export function MobileNav() {
         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
           <Sparkles className="w-5 h-5 text-primary-foreground" />
         </div>
-        <span className="font-semibold text-lg tracking-tight">FinanceAI</span>
+        <span className="font-semibold text-lg tracking-tight">Bajat</span>
       </div>
 
       {/* Navigation */}

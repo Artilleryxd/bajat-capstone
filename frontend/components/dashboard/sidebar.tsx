@@ -45,7 +45,7 @@ export function Sidebar() {
           <Sparkles className="w-5 h-5 text-primary-foreground" />
         </div>
         {!collapsed && (
-          <span className="font-semibold text-lg tracking-tight">FinanceAI</span>
+          <span className="font-semibold text-lg tracking-tight">Bajat</span>
         )}
       </div>
 
