@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -42,7 +43,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { useCurrency } from "@/lib/hooks/useCurrency"
-import { getToken } from "@/lib/auth"
+import { getToken, logout } from "@/lib/auth"
 import type { LoanResponse, LoanCreate, OptimizeResult } from "@/lib/types/loan"
 
 const LOAN_TYPE_OPTIONS = [
@@ -81,6 +82,7 @@ function loanToCardFormat(loan: LoanResponse) {
 }
 
 export default function LoansPage() {
+  const router = useRouter()
   const { formatCurrency, currencySymbol } = useCurrency()
 
   const [loans, setLoans] = useState<LoanResponse[]>([])
@@ -102,9 +104,22 @@ export default function LoansPage() {
     setLoadingLoans(true)
     try {
       const token = getToken()
+      if (!token) {
+        toast.error("Session expired. Please log in again.")
+        logout()
+        router.replace("/login")
+        return
+      }
+
       const res = await fetch("/api/loans", {
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.")
+        logout()
+        router.replace("/login")
+        return
+      }
       if (!res.ok) throw new Error("Failed to fetch loans")
       const data = await res.json()
       setLoans(data.loans ?? [])
@@ -113,7 +128,7 @@ export default function LoansPage() {
     } finally {
       setLoadingLoans(false)
     }
-  }, [])
+  }, [router])
 
   useEffect(() => {
     fetchLoans()
@@ -137,6 +152,13 @@ export default function LoansPage() {
     setIsAddingLoan(true)
     try {
       const token = getToken()
+      if (!token) {
+        toast.error("Session expired. Please log in again.")
+        logout()
+        router.replace("/login")
+        return
+      }
+
       const res = await fetch("/api/loans", {
         method: "POST",
         headers: {
@@ -145,6 +167,12 @@ export default function LoansPage() {
         },
         body: JSON.stringify(payload),
       })
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.")
+        logout()
+        router.replace("/login")
+        return
+      }
       if (!res.ok) throw new Error("Failed to add loan")
       toast.success("Loan added successfully")
       setLoanType("")
@@ -166,10 +194,23 @@ export default function LoansPage() {
     setIsOptimizing(true)
     try {
       const token = getToken()
+      if (!token) {
+        toast.error("Session expired. Please log in again.")
+        logout()
+        router.replace("/login")
+        return
+      }
+
       const res = await fetch("/api/loans/optimize", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.")
+        logout()
+        router.replace("/login")
+        return
+      }
       if (!res.ok) {
         const err = await res.json()
         throw new Error(

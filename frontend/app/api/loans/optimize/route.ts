@@ -2,8 +2,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { API_BASE_URL } from "@/lib/config"
 
+function getAuthHeader(request: NextRequest): string | null {
+  const authHeader = request.headers.get("authorization")?.trim()
+  if (
+    !authHeader ||
+    authHeader === "Bearer" ||
+    authHeader === "Bearer null" ||
+    authHeader === "Bearer undefined"
+  ) {
+    return null
+  }
+  return authHeader
+}
+
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization")
+  const authHeader = getAuthHeader(request)
   if (!authHeader) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }

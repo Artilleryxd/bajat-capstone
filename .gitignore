@@ -77,4 +77,8 @@ htmlcov/
 pip-wheel-metadata/
 .ipynb_checkpoints/
 
+# Local context files
+claude.md
+memory.md
+
 
