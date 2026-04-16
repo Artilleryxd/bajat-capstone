@@ -3,7 +3,7 @@
 import { useFormContext } from "react-hook-form";
 import { Step2FormValues, OnboardingFormValues } from "@/lib/validation/onboardingSchema";
 import { Loader2 } from "lucide-react";
-import { getCurrencySymbol } from "@/lib/utils/currencyMap";
+import { getCurrencySymbolByCountry } from "@/lib/utils/countryToCurrency";
 import { useMemo } from "react";
 
 export function Step2({
@@ -20,7 +20,7 @@ export function Step2({
   } = useFormContext<OnboardingFormValues>();
 
   const countryCode = watch("country");
-  const currencySymbol = useMemo(() => getCurrencySymbol(countryCode), [countryCode]);
+  const currencySymbol = useMemo(() => getCurrencySymbolByCountry(countryCode), [countryCode]);
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500">

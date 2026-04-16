@@ -15,6 +15,7 @@ import {
   Pencil,
   Lock,
   MessageCircle,
+  Info,
 } from "lucide-react"
 
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
@@ -45,6 +46,15 @@ interface UserProfile {
   marital_status: string | null
   num_dependents: number | null
   income_type: string | null
+}
+
+interface BudgetGenerateOverrides {
+  income?: number
+  location?: string
+  dependents?: number
+  housing_status?: string
+  marital_status?: "single" | "married"
+  occupation?: string
 }
 
 const CHART_COLORS = {
@@ -80,6 +90,7 @@ export default function BudgetPage() {
 
   // Profile state
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profileOverrides, setProfileOverrides] = useState<Partial<UserProfile>>({})
   const [loadingProfile, setLoadingProfile] = useState(true)
 
   // Edit mode
@@ -99,6 +110,14 @@ export default function BudgetPage() {
 
   // Spending summary (for hover tooltips)
   const [spendingSummary, setSpendingSummary] = useState<SpendingSummary | null>(null)
+
+  const effectiveProfile: UserProfile | null = profile
+    ? {
+        ...profile,
+        ...profileOverrides,
+      }
+    : null
+  const hasTemporaryOverrides = Object.keys(profileOverrides).length > 0
 
   // Fetch profile
   const fetchProfile = useCallback(async () => {
@@ -162,17 +181,71 @@ export default function BudgetPage() {
 
   // Edit mode handlers
   const enterEditMode = () => {
-    if (!profile) return
-    setEditIncome(profile.monthly_income?.toString() ?? "")
-    setEditCity(profile.city ?? "")
-    setEditNeighbourhood(profile.neighbourhood ?? "")
-    setEditHousing(profile.housing_status ?? "")
-    setEditMarital(profile.marital_status ?? "")
-    setEditDependents(profile.num_dependents?.toString() ?? "0")
-    setEditIncomeType(profile.income_type ?? "")
+    if (!effectiveProfile) return
+    const marital = (effectiveProfile.marital_status || "").toLowerCase()
+    setEditIncome(effectiveProfile.monthly_income?.toString() ?? "")
+    setEditCity(effectiveProfile.city ?? "")
+    setEditNeighbourhood(effectiveProfile.neighbourhood ?? "")
+    setEditHousing(effectiveProfile.housing_status ?? "")
+    setEditMarital(marital === "single" || marital === "married" ? marital : "")
+    setEditDependents(effectiveProfile.num_dependents?.toString() ?? "0")
+    setEditIncomeType(effectiveProfile.income_type ?? "")
     setEditing(true)
   }
-  const cancelEdit = () => setEditing(false)
+
+  const applyTemporaryOverrides = () => {
+    const parsedIncome = editIncome.trim() ? Number(editIncome) : null
+    const parsedDependents = editDependents.trim() ? Number(editDependents) : 0
+
+    const normalizedMarital = editMarital.toLowerCase()
+
+    setProfileOverrides({
+      monthly_income: Number.isFinite(parsedIncome) && parsedIncome && parsedIncome > 0 ? parsedIncome : null,
+      city: editCity.trim() || null,
+      neighbourhood: editNeighbourhood.trim() || null,
+      housing_status: editHousing.trim() || null,
+      marital_status: normalizedMarital === "single" || normalizedMarital === "married" ? normalizedMarital : null,
+      num_dependents: Number.isFinite(parsedDependents) && parsedDependents >= 0 ? parsedDependents : 0,
+      income_type: editIncomeType.trim() || null,
+    })
+
+    setEditing(false)
+    toast.info("Profile overrides locked temporarily for this session")
+  }
+
+  const buildGenerateOverrides = (): BudgetGenerateOverrides => {
+    const source = editing
+      ? {
+          monthly_income: editIncome.trim() ? Number(editIncome) : null,
+          city: editCity.trim() || null,
+          neighbourhood: editNeighbourhood.trim() || null,
+          housing_status: editHousing.trim() || null,
+          marital_status: editMarital.trim() || null,
+          num_dependents: editDependents.trim() ? Number(editDependents) : 0,
+          income_type: editIncomeType.trim() || null,
+        }
+      : effectiveProfile
+
+    if (!source) return {}
+
+    const locationParts = [source.neighbourhood, source.city].filter((part) => !!part && part.trim().length > 0)
+    const location = locationParts.join(", ")
+
+    const maritalCandidate = (source.marital_status || "").toLowerCase()
+    const maritalStatus = maritalCandidate === "single" || maritalCandidate === "married" ? maritalCandidate : undefined
+
+    const income = source.monthly_income
+    const dependents = source.num_dependents
+
+    return {
+      income: typeof income === "number" && income > 0 ? income : undefined,
+      location: location || undefined,
+      dependents: typeof dependents === "number" && dependents >= 0 ? dependents : undefined,
+      housing_status: source.housing_status || undefined,
+      marital_status: maritalStatus,
+      occupation: source.income_type || undefined,
+    }
+  }
 
   // Generate budget
   const handleGenerate = async () => {
@@ -186,6 +259,7 @@ export default function BudgetPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify(buildGenerateOverrides()),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -278,21 +352,29 @@ export default function BudgetPage() {
               AI-powered personalized budget based on your profile
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/budget/chat">
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Budget Chat
-              </Link>
-            </Button>
-            <Button onClick={handleGenerate} disabled={generating || isLoading}>
-              {generating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4 mr-2" />
-              )}
-              {generating ? "Generating..." : "Generate Budget"}
-            </Button>
+          <div className="flex flex-col items-start sm:items-end gap-1">
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/budget/chat">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Budget Chat
+                </Link>
+              </Button>
+              <Button onClick={handleGenerate} disabled={generating || isLoading}>
+                {generating ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                {generating ? "Generating..." : "Generate Budget"}
+              </Button>
+            </div>
+            {hasTemporaryOverrides && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <Info className="w-3.5 h-3.5" />
+                Using temporary profile overrides for this generation
+              </p>
+            )}
           </div>
         </div>
 
@@ -310,8 +392,8 @@ export default function BudgetPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={editing ? cancelEdit : enterEditMode}
-                  disabled={loadingProfile || !profile}
+                  onClick={editing ? applyTemporaryOverrides : enterEditMode}
+                  disabled={loadingProfile || !effectiveProfile}
                 >
                   {editing ? (
                     <>
@@ -346,7 +428,7 @@ export default function BudgetPage() {
                       />
                     ) : (
                       <p className="text-sm font-medium">
-                        {profile?.monthly_income ? formatCurrency(profile.monthly_income) : "Not set"}
+                        {effectiveProfile?.monthly_income ? formatCurrency(effectiveProfile.monthly_income) : "Not set"}
                       </p>
                     )}
                   </div>
@@ -361,7 +443,7 @@ export default function BudgetPage() {
                         placeholder="e.g. Mumbai"
                       />
                     ) : (
-                      <p className="text-sm font-medium">{profile?.city || "Not set"}</p>
+                      <p className="text-sm font-medium">{effectiveProfile?.city || "Not set"}</p>
                     )}
                   </div>
 
@@ -375,7 +457,7 @@ export default function BudgetPage() {
                         placeholder="e.g. Kharghar"
                       />
                     ) : (
-                      <p className="text-sm font-medium">{profile?.neighbourhood || "Not set"}</p>
+                      <p className="text-sm font-medium">{effectiveProfile?.neighbourhood || "Not set"}</p>
                     )}
                   </div>
 
@@ -394,7 +476,7 @@ export default function BudgetPage() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm font-medium capitalize">{profile?.housing_status || "Not set"}</p>
+                      <p className="text-sm font-medium capitalize">{effectiveProfile?.housing_status || "Not set"}</p>
                     )}
                   </div>
 
@@ -409,12 +491,10 @@ export default function BudgetPage() {
                         <SelectContent>
                           <SelectItem value="single">Single</SelectItem>
                           <SelectItem value="married">Married</SelectItem>
-                          <SelectItem value="divorced">Divorced</SelectItem>
-                          <SelectItem value="widowed">Widowed</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm font-medium capitalize">{profile?.marital_status || "Not set"}</p>
+                      <p className="text-sm font-medium capitalize">{effectiveProfile?.marital_status || "Not set"}</p>
                     )}
                   </div>
 
@@ -429,27 +509,21 @@ export default function BudgetPage() {
                         onChange={(e) => setEditDependents(e.target.value)}
                       />
                     ) : (
-                      <p className="text-sm font-medium">{profile?.num_dependents ?? 0}</p>
+                      <p className="text-sm font-medium">{effectiveProfile?.num_dependents ?? 0}</p>
                     )}
                   </div>
 
-                  {/* Income Type */}
+                  {/* Occupation */}
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Income Type</Label>
+                    <Label className="text-xs text-muted-foreground">Occupation</Label>
                     {editing ? (
-                      <Select value={editIncomeType} onValueChange={setEditIncomeType}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="salaried">Salaried</SelectItem>
-                          <SelectItem value="freelance">Freelance</SelectItem>
-                          <SelectItem value="business">Business</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        value={editIncomeType}
+                        onChange={(e) => setEditIncomeType(e.target.value)}
+                        placeholder="e.g. Software Engineer"
+                      />
                     ) : (
-                      <p className="text-sm font-medium capitalize">{profile?.income_type || "Not set"}</p>
+                      <p className="text-sm font-medium">{effectiveProfile?.income_type || "Not set"}</p>
                     )}
                   </div>
                 </>

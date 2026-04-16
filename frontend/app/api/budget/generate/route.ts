@@ -21,12 +21,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const body = await request.json().catch(() => ({}))
+
     const res = await fetch(`${API_BASE_URL}/budget/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: authHeader,
       },
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     return NextResponse.json(data, { status: res.status })

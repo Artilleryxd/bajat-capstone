@@ -5,6 +5,7 @@ from datetime import date
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from db.supabase_client import supabase_admin
 from services.budget_ai import BudgetInput, generate_budget_plan
@@ -13,6 +14,15 @@ from utils.jwt_verifier import get_current_user
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/budget", tags=["budget"])
+
+
+class BudgetGenerateOverrides(BaseModel):
+    income: float | None = None
+    location: str | None = None
+    dependents: int | None = None
+    housing_status: str | None = None
+    marital_status: str | None = None
+    occupation: str | None = None
 
 
 def _safe_first(data: list[dict[str, Any]] | None) -> dict[str, Any]:
@@ -69,13 +79,26 @@ async def _fetch_user_loans_assets(user_id: str) -> tuple[list[dict[str, Any]], 
     return loans, assets
 
 
-async def _build_budget_input(user_id: str) -> BudgetInput:
+async def _build_budget_input(user_id: str, overrides: BudgetGenerateOverrides | None = None) -> BudgetInput:
     profile = await _fetch_user_profile(user_id)
     loans, assets = await _fetch_user_loans_assets(user_id)
 
-    income = profile.get("monthly_income")
-    location = _resolve_location(profile)
-    dependents = profile.get("num_dependents", 0)
+    safe_overrides = overrides or BudgetGenerateOverrides()
+
+    income = safe_overrides.income if safe_overrides.income is not None else profile.get("monthly_income")
+    location = _resolve_location(profile, override_location=safe_overrides.location)
+    dependents = (
+        safe_overrides.dependents
+        if safe_overrides.dependents is not None
+        else profile.get("num_dependents", 0)
+    )
+
+    marital_status = (safe_overrides.marital_status or str(profile.get("marital_status", "single"))).lower()
+    if marital_status not in ("single", "married"):
+        marital_status = "single"
+
+    housing_status = safe_overrides.housing_status or str(profile.get("housing_status", "rented"))
+    occupation = safe_overrides.occupation or str(profile.get("income_type", "salaried"))
 
     if income is None:
         raise HTTPException(
@@ -90,9 +113,9 @@ async def _build_budget_input(user_id: str) -> BudgetInput:
         income=float(income),
         location=location,
         dependents=int(dependents or 0),
-        housing_status=str(profile.get("housing_status", "rented")),
-        marital_status=str(profile.get("marital_status", "single")),
-        income_type=str(profile.get("income_type", "salaried")),
+        housing_status=housing_status,
+        marital_status=marital_status,
+        income_type=occupation,
         loans=loans,
         assets=assets,
     )
@@ -111,12 +134,15 @@ async def _next_budget_version(user_id: str) -> int:
 
 
 @router.post("/generate")
-async def generate_budget(user: dict = Depends(get_current_user)):
+async def generate_budget(
+    overrides: BudgetGenerateOverrides | None = None,
+    user: dict = Depends(get_current_user),
+):
     """
     Generate budget from profile + loans + assets and persist as non-temporary.
     """
     try:
-        budget_input = await _build_budget_input(user_id=user["id"])
+        budget_input = await _build_budget_input(user_id=user["id"], overrides=overrides)
         generated_budget = await generate_budget_plan(budget_input)
         version = await _next_budget_version(user["id"])
 

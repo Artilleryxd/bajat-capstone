@@ -26,6 +26,15 @@ import {
   Trash2,
 } from "lucide-react"
 import { useCurrency } from "@/lib/hooks/useCurrency"
+import {
+  getCurrencySymbolFromCode,
+  getSupportedCurrencyCodes,
+} from "@/lib/utils/countryToCurrency"
+
+const currencyOptions = getSupportedCurrencyCodes().map((code) => ({
+  code,
+  symbol: getCurrencySymbolFromCode(code),
+}))
 
 export default function SettingsPage() {
   const { currencyCode } = useCurrency()
@@ -238,15 +247,11 @@ export default function SettingsPage() {
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USD">USD ($)</SelectItem>
-                  <SelectItem value="EUR">EUR (€)</SelectItem>
-                  <SelectItem value="GBP">GBP (£)</SelectItem>
-                  <SelectItem value="JPY">JPY (¥)</SelectItem>
-                  <SelectItem value="INR">INR (₹)</SelectItem>
-                  <SelectItem value="CAD">CAD (C$)</SelectItem>
-                  <SelectItem value="AUD">AUD (A$)</SelectItem>
-                  <SelectItem value="SGD">SGD (S$)</SelectItem>
-                  <SelectItem value="AED">AED (د.إ)</SelectItem>
+                  {currencyOptions.map((option) => (
+                    <SelectItem key={option.code} value={option.code}>
+                      {option.code} ({option.symbol})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

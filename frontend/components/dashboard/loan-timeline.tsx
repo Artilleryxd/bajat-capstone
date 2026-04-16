@@ -25,7 +25,7 @@ interface LoanTimelineProps {
 }
 
 export function LoanTimeline({ data, className }: LoanTimelineProps) {
-  const { formatCurrency, currencySymbol } = useCurrency()
+  const { formatCurrency, formatCompactCurrency } = useCurrency()
 
   return (
     <Card className={cn("", className)}>
@@ -44,7 +44,7 @@ export function LoanTimeline({ data, className }: LoanTimelineProps) {
               />
               <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
+                tickFormatter={(value) => formatCompactCurrency(value)}
                 className="text-muted-foreground"
               />
               <Tooltip

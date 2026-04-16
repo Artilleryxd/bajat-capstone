@@ -83,7 +83,7 @@ function loanToCardFormat(loan: LoanResponse) {
 
 export default function LoansPage() {
   const router = useRouter()
-  const { formatCurrency, currencySymbol } = useCurrency()
+    const { formatCurrency, formatCompactCurrency } = useCurrency()
 
   const [loans, setLoans] = useState<LoanResponse[]>([])
   const [loadingLoans, setLoadingLoans] = useState(true)
@@ -556,9 +556,7 @@ export default function LoansPage() {
                       <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                       <YAxis
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(v: number) =>
-                          `${currencySymbol}${(v / 1000).toFixed(0)}k`
-                        }
+                          tickFormatter={(v: number) => formatCompactCurrency(v)}
                       />
                       <Tooltip
                         formatter={(value: number) => formatCurrency(value)}

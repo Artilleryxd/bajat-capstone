@@ -2,7 +2,10 @@
 
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react"
 import { getToken } from "@/lib/auth"
-import { getCurrencyCode } from "@/lib/utils/countryToCurrency"
+import {
+  getCurrencyCode,
+  getCurrencySymbolFromCode,
+} from "@/lib/utils/countryToCurrency"
 
 interface CurrencyContextValue {
   /** ISO 4217 currency code, e.g. "INR", "USD", "EUR" */
@@ -11,6 +14,8 @@ interface CurrencyContextValue {
   currencySymbol: string
   /** Format a number as currency using the user's profile currency */
   formatCurrency: (amount: number | null | undefined) => string
+  /** Format a number as compact currency (e.g. $12K, EUR 1.2M) */
+  formatCompactCurrency: (amount: number | null | undefined) => string
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null)
@@ -20,25 +25,6 @@ interface CurrencyProviderProps {
   /** Optional override — if you already have the currency code, pass it directly
    *  instead of making an extra API call. */
   currencyCode?: string
-}
-
-/**
- * Resolves the currency symbol from a currency code using Intl.
- * Falls back to the code itself if Intl can't resolve it.
- */
-function resolveSymbol(code: string): string {
-  try {
-    const parts = new Intl.NumberFormat("en", {
-      style: "currency",
-      currency: code,
-      currencyDisplay: "narrowSymbol",
-    }).formatToParts(0)
-
-    const symbolPart = parts.find((p) => p.type === "currency")
-    return symbolPart?.value ?? code
-  } catch {
-    return code
-  }
 }
 
 export function CurrencyProvider({ children, currencyCode: codeProp }: CurrencyProviderProps) {
@@ -79,7 +65,7 @@ export function CurrencyProvider({ children, currencyCode: codeProp }: CurrencyP
   }, [codeProp])
 
   const value = useMemo<CurrencyContextValue>(() => {
-    const currencySymbol = resolveSymbol(code)
+    const currencySymbol = getCurrencySymbolFromCode(code)
 
     const formatCurrency = (amount: number | null | undefined): string => {
       if (amount == null) return ""
@@ -95,10 +81,25 @@ export function CurrencyProvider({ children, currencyCode: codeProp }: CurrencyP
       }
     }
 
+    const formatCompactCurrency = (amount: number | null | undefined): string => {
+      if (amount == null) return ""
+      try {
+        return new Intl.NumberFormat("en", {
+          style: "currency",
+          currency: code,
+          notation: "compact",
+          maximumFractionDigits: 1,
+        }).format(amount)
+      } catch {
+        return formatCurrency(amount)
+      }
+    }
+
     return {
       currencyCode: code,
       currencySymbol,
       formatCurrency,
+      formatCompactCurrency,
     }
   }, [code])
 
@@ -119,10 +120,23 @@ export function useCurrency(): CurrencyContextValue {
     // Return sensible defaults if used outside provider (e.g. onboarding)
     return {
       currencyCode: "USD",
-      currencySymbol: "$",
+      currencySymbol: getCurrencySymbolFromCode("USD"),
       formatCurrency: (amount) => {
         if (amount == null) return ""
-        return `$${amount.toLocaleString()}`
+        return `${getCurrencySymbolFromCode("USD")}${amount.toLocaleString()}`
+      },
+      formatCompactCurrency: (amount) => {
+        if (amount == null) return ""
+        try {
+          return new Intl.NumberFormat("en", {
+            style: "currency",
+            currency: "USD",
+            notation: "compact",
+            maximumFractionDigits: 1,
+          }).format(amount)
+        } catch {
+          return `${getCurrencySymbolFromCode("USD")}${amount.toLocaleString()}`
+        }
       },
     }
   }

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/constants"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 import type { ExpenseCategory } from "@/lib/types/expense"
 
 interface Transaction {
@@ -69,6 +70,8 @@ export function ExpenseTable({
   showConfidence = false,
   showSource = false,
 }: ExpenseTableProps) {
+  const { formatCurrency } = useCurrency()
+
   if (!transactions.length) {
     return (
       <Card className={cn("", className)}>
@@ -199,7 +202,7 @@ export function ExpenseTable({
                       </TableCell>
                     )}
                     <TableCell className="text-right font-medium whitespace-nowrap">
-                      ₹{t.amount.toLocaleString("en-IN")}
+                      {formatCurrency(t.amount)}
                     </TableCell>
                   </TableRow>
                 )

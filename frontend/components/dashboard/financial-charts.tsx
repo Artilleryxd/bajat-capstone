@@ -35,7 +35,7 @@ const netWorthData = [
 ]
 
 export function NetWorthChart() {
-  const { formatCurrency, currencySymbol } = useCurrency()
+  const { formatCurrency, formatCompactCurrency } = useCurrency()
 
   return (
     <Card>
@@ -54,7 +54,7 @@ export function NetWorthChart() {
               />
               <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
+                tickFormatter={(value) => formatCompactCurrency(value)}
                 className="text-muted-foreground"
               />
               <Tooltip
@@ -92,7 +92,7 @@ const incomeExpenseData = [
 ]
 
 export function IncomeExpenseChart() {
-  const { formatCurrency, currencySymbol } = useCurrency()
+  const { formatCurrency, formatCompactCurrency } = useCurrency()
 
   return (
     <Card>
@@ -111,7 +111,7 @@ export function IncomeExpenseChart() {
               />
               <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
+                tickFormatter={(value) => formatCompactCurrency(value)}
                 className="text-muted-foreground"
               />
               <Tooltip

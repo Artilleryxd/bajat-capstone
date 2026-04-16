@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getToken } from "@/lib/auth"
+import { useCurrency } from "@/lib/hooks/useCurrency"
 import type { BudgetOutput } from "@/lib/types/budget"
 
 interface UserOverrideFormProps {
@@ -19,6 +20,7 @@ interface UserOverrideFormProps {
 }
 
 export function UserOverrideForm({ onBudgetUpdate, onReset, isSimulating, canReset }: UserOverrideFormProps) {
+  const { currencyCode } = useCurrency()
   const [income, setIncome] = useState("")
   const [location, setLocation] = useState("")
   const [dependents, setDependents] = useState("")
@@ -94,7 +96,7 @@ export function UserOverrideForm({ onBudgetUpdate, onReset, isSimulating, canRes
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="override-income">Income (INR)</Label>
+            <Label htmlFor="override-income">Income ({currencyCode})</Label>
             <Input
               id="override-income"
               type="number"

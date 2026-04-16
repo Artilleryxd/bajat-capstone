@@ -1,17 +1,17 @@
-export const currencyMap: Record<string, string> = {
-  IN: "₹", // India
-  US: "$", // United States
-  GB: "£", // United Kingdom
-  CA: "C$", // Canada
-  AU: "A$", // Australia
-  AE: "د.إ", // United Arab Emirates
-  SG: "S$", // Singapore
-  // Note: For Europe, you might handle it per country dynamically, but we'll add a default mapping format here
-  AT: "€", BE: "€", CY: "€", EE: "€", FI: "€", FR: "€", DE: "€",
-  GR: "€", IE: "€", IT: "€", LV: "€", LT: "€", LU: "€", MT: "€", NL: "€",
-  PT: "€", SK: "€", SI: "€", ES: "€"
-};
+import {
+  countryToCurrencyCode,
+  getCurrencyCode,
+  getCurrencySymbolFromCode,
+} from "@/lib/utils/countryToCurrency";
+
+export const currencyMap: Record<string, string> = Object.fromEntries(
+  Object.entries(countryToCurrencyCode).map(([countryCode, currencyCode]) => [
+    countryCode,
+    getCurrencySymbolFromCode(currencyCode),
+  ])
+);
 
 export const getCurrencySymbol = (countryCode: string) => {
-  return currencyMap[countryCode] || "$"; // Default to USD 
+  const currencyCode = getCurrencyCode(countryCode);
+  return getCurrencySymbolFromCode(currencyCode);
 };

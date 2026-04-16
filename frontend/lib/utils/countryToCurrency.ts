@@ -69,6 +69,21 @@ export const countryToCurrencyCode: Record<string, string> = {
   ET: "ETB",
 };
 
+function resolveSymbol(currencyCode: string): string {
+  try {
+    const parts = new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: currencyCode,
+      currencyDisplay: "narrowSymbol",
+    }).formatToParts(0);
+
+    const symbolPart = parts.find((part) => part.type === "currency");
+    return symbolPart?.value ?? currencyCode;
+  } catch {
+    return currencyCode;
+  }
+}
+
 /**
  * Get the ISO 4217 currency code for a given country ISO code.
  * Defaults to USD if the country is not in the map.
@@ -76,4 +91,17 @@ export const countryToCurrencyCode: Record<string, string> = {
 export function getCurrencyCode(countryIsoCode: string): string {
   const normalizedCountryCode = countryIsoCode.trim().toUpperCase();
   return countryToCurrencyCode[normalizedCountryCode] || "USD";
+}
+
+export function getCurrencySymbolFromCode(currencyCode: string): string {
+  const normalizedCurrencyCode = currencyCode.trim().toUpperCase();
+  return resolveSymbol(normalizedCurrencyCode || "USD");
+}
+
+export function getCurrencySymbolByCountry(countryIsoCode: string): string {
+  return getCurrencySymbolFromCode(getCurrencyCode(countryIsoCode));
+}
+
+export function getSupportedCurrencyCodes(): string[] {
+  return Array.from(new Set(Object.values(countryToCurrencyCode))).sort();
 }
