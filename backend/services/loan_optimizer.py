@@ -11,6 +11,8 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 MAX_MONTHS = 600  # 50-year safety cap
+INTEREST_WEIGHT = 0.65
+TIME_WEIGHT = 0.35
 
 
 @dataclass
@@ -170,11 +172,41 @@ def optimize_loans(
     # Baseline: each loan independently, no reallocation
     baseline = _baseline(loans)
 
-    best = (
-        "avalanche"
-        if avalanche["total_interest_paid"] <= snowball["total_interest_paid"]
-        else "snowball"
+    def _score(result: dict, base_interest: float, base_months: int) -> float:
+        interest_norm = (
+            result["total_interest_paid"] / base_interest if base_interest > 0 else 0.0
+        )
+        months_norm = result["months_to_close"] / base_months if base_months > 0 else 0.0
+        return round((INTEREST_WEIGHT * interest_norm) + (TIME_WEIGHT * months_norm), 6)
+
+    avalanche_score = _score(
+        avalanche,
+        baseline["total_interest_paid"],
+        baseline["months_to_close"],
     )
+    snowball_score = _score(
+        snowball,
+        baseline["total_interest_paid"],
+        baseline["months_to_close"],
+    )
+
+    if avalanche_score == snowball_score:
+        # Tie-break to lower interest first, then fewer months.
+        if avalanche["total_interest_paid"] == snowball["total_interest_paid"]:
+            best = (
+                "avalanche"
+                if avalanche["months_to_close"] <= snowball["months_to_close"]
+                else "snowball"
+            )
+        else:
+            best = (
+                "avalanche"
+                if avalanche["total_interest_paid"] <= snowball["total_interest_paid"]
+                else "snowball"
+            )
+    else:
+        best = "avalanche" if avalanche_score < snowball_score else "snowball"
+
     best_result = avalanche if best == "avalanche" else snowball
 
     total_saved = round(baseline["total_interest_paid"] - best_result["total_interest_paid"], 2)
@@ -205,4 +237,15 @@ def optimize_loans(
         "interest_diff": interest_diff,
         "months_diff": months_diff,
         "monthly_surplus": max(0.0, monthly_income - total_emi),
+        "optimization_basis": {
+            "mode": "cost_time_weighted",
+            "weights": {
+                "interest": INTEREST_WEIGHT,
+                "months": TIME_WEIGHT,
+            },
+        },
+        "strategy_scores": {
+            "avalanche": avalanche_score,
+            "snowball": snowball_score,
+        },
     }

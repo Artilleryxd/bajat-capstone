@@ -57,5 +57,16 @@ export interface OptimizeResult {
   interest_diff: number
   months_diff: number
   monthly_surplus: number
+  optimization_basis: {
+    mode: string
+    weights: {
+      interest: number
+      months: number
+    }
+  }
+  strategy_scores: {
+    avalanche: number
+    snowball: number
+  }
   ai_explanation: string
 }

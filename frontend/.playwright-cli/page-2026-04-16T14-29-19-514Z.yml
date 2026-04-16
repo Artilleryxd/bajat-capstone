@@ -1,0 +1,14 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - heading "Your path to financial freedom" [level=1] [ref=e12]:
+        - text: Your path
+        - text: to financial freedom
+      - paragraph [ref=e13]: Personalised AI Financial consultant
+    - generic [ref=e14]:
+      - button "Sign Up" [ref=e15]
+      - button "Login" [ref=e16]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e28] [cursor=pointer]:
+    - img [ref=e29]
+  - alert [ref=e32]

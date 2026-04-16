@@ -1,6 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import {
+  Home,
+  ShoppingBag,
+  TrendingUp,
+  Shield,
+  CreditCard,
+  Sparkles,
+  Loader2,
+  Pencil,
+  Lock,
+  MessageCircle,
+} from "lucide-react"
+
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,44 +29,243 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { BudgetProgress } from "@/components/dashboard/budget-progress"
+import { BudgetChart } from "@/components/BudgetChart"
 import { BudgetCard } from "@/components/dashboard/budget-cards"
-import { AIChatPanel } from "@/components/dashboard/ai-chat-panel"
-import {
-  Home,
-  ShoppingBag,
-  TrendingUp,
-  Shield,
-  Sparkles,
-  Calculator,
-} from "lucide-react"
+import { AIInsights } from "@/components/AIInsights"
 import { useCurrency } from "@/lib/hooks/useCurrency"
+import { getToken } from "@/lib/auth"
+import type { BudgetOutput, SpendingSummary } from "@/lib/types/budget"
 
-const budgetCategories = [
-  { name: "Needs", allocated: 4250, spent: 3800, color: "var(--chart-1)", percentage: 50 },
-  { name: "Wants", allocated: 2550, spent: 2100, color: "var(--chart-2)", percentage: 30 },
-  { name: "Investments", allocated: 1275, spent: 1275, color: "var(--primary)", percentage: 15 },
-  { name: "Emergency Fund", allocated: 425, spent: 425, color: "var(--chart-3)", percentage: 5 },
-]
+interface UserProfile {
+  id: string
+  monthly_income: number | null
+  city: string | null
+  neighbourhood: string | null
+  housing_status: string | null
+  marital_status: string | null
+  num_dependents: number | null
+  income_type: string | null
+}
 
-const budgetSuggestions = [
-  "Increase my savings rate",
-  "Reduce discretionary spending",
-  "I expect a salary raise",
-  "Plan for a big purchase",
-]
+const CHART_COLORS = {
+  needs: "hsl(142, 71%, 45%)",
+  wants: "hsl(217, 91%, 60%)",
+  investments: "hsl(262, 83%, 58%)",
+  emergency: "hsl(47, 96%, 53%)",
+  repayment: "hsl(0, 72%, 51%)",
+}
+
+function sumDict(dict: Record<string, number | undefined> | number | undefined): number {
+  if (typeof dict === "number") return dict
+  if (!dict || typeof dict !== "object") return 0
+  return Object.values(dict).reduce((acc: number, v) => acc + (v ?? 0), 0)
+}
+
+/** Normalize any section from old (number) or new (dict) format */
+function normalizeDict(
+  val: Record<string, number | undefined> | number | undefined
+): Record<string, number> {
+  if (typeof val === "number") return val > 0 ? { total: val } : {}
+  if (!val || typeof val !== "object") return {}
+  const result: Record<string, number> = {}
+  for (const [k, v] of Object.entries(val)) {
+    if (v !== undefined && v > 0) result[k] = v
+  }
+  return result
+}
 
 export default function BudgetPage() {
-  const { currencySymbol } = useCurrency()
+  const router = useRouter()
+  const { formatCurrency } = useCurrency()
 
-  const [income, setIncome] = useState("8500")
-  const [location, setLocation] = useState("")
-  const [maritalStatus, setMaritalStatus] = useState("")
-  const [dependents, setDependents] = useState("0")
-  const [age, setAge] = useState("30")
-  const [retirementGoal, setRetirementGoal] = useState("65")
-  const [riskTolerance, setRiskTolerance] = useState([50])
+  // Profile state
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loadingProfile, setLoadingProfile] = useState(true)
+
+  // Edit mode
+  const [editing, setEditing] = useState(false)
+  const [editIncome, setEditIncome] = useState("")
+  const [editCity, setEditCity] = useState("")
+  const [editNeighbourhood, setEditNeighbourhood] = useState("")
+  const [editHousing, setEditHousing] = useState("")
+  const [editMarital, setEditMarital] = useState("")
+  const [editDependents, setEditDependents] = useState("")
+  const [editIncomeType, setEditIncomeType] = useState("")
+
+  // Budget state
+  const [budget, setBudget] = useState<BudgetOutput | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [loadingLatest, setLoadingLatest] = useState(true)
+
+  // Spending summary (for hover tooltips)
+  const [spendingSummary, setSpendingSummary] = useState<SpendingSummary | null>(null)
+
+  // Fetch profile
+  const fetchProfile = useCallback(async () => {
+    try {
+      const token = getToken()
+      if (!token) { router.push("/login"); return }
+      const res = await fetch("/api/profile/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.status === 401) { router.push("/login"); return }
+      if (res.status === 404) { router.push("/onboarding"); return }
+      if (!res.ok) throw new Error("Failed to fetch profile")
+      setProfile(await res.json())
+    } catch {
+      toast.error("Could not load your profile")
+    } finally {
+      setLoadingProfile(false)
+    }
+  }, [router])
+
+  // Fetch latest saved budget
+  const fetchLatestBudget = useCallback(async () => {
+    try {
+      const token = getToken()
+      if (!token) return
+      const res = await fetch("/api/budget/latest", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.status === 404) return
+      if (!res.ok) throw new Error("Failed to fetch budget")
+      const data: BudgetOutput = await res.json()
+      setBudget(data)
+    } catch {
+      // silently ignore
+    } finally {
+      setLoadingLatest(false)
+    }
+  }, [])
+
+  // Fetch spending summary
+  const fetchSpendingSummary = useCallback(async () => {
+    try {
+      const token = getToken()
+      if (!token) return
+      const res = await fetch("/api/budget/spending-summary", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      setSpendingSummary(data.summary ?? null)
+    } catch {
+      // silently ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchProfile()
+    fetchLatestBudget()
+    fetchSpendingSummary()
+  }, [fetchProfile, fetchLatestBudget, fetchSpendingSummary])
+
+  // Edit mode handlers
+  const enterEditMode = () => {
+    if (!profile) return
+    setEditIncome(profile.monthly_income?.toString() ?? "")
+    setEditCity(profile.city ?? "")
+    setEditNeighbourhood(profile.neighbourhood ?? "")
+    setEditHousing(profile.housing_status ?? "")
+    setEditMarital(profile.marital_status ?? "")
+    setEditDependents(profile.num_dependents?.toString() ?? "0")
+    setEditIncomeType(profile.income_type ?? "")
+    setEditing(true)
+  }
+  const cancelEdit = () => setEditing(false)
+
+  // Generate budget
+  const handleGenerate = async () => {
+    setGenerating(true)
+    try {
+      const token = getToken()
+      if (!token) { router.push("/login"); return }
+      const res = await fetch("/api/budget/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.detail?.message || "Failed to generate budget")
+      }
+      const data: BudgetOutput = await res.json()
+      setBudget(data)
+      toast.success("Budget generated and saved!")
+      // Refresh spending summary
+      fetchSpendingSummary()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Budget generation failed"
+      toast.error(message)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  // Build 5-section chart data
+  const needsTotal = budget ? sumDict(budget.needs) : 0
+  const wantsTotal = budget ? sumDict(budget.wants) : 0
+  const investmentsTotal = budget ? sumDict(budget.investments) : 0
+  const emergencyTotal = budget?.emergency ?? 0
+  const repaymentTotal = budget ? sumDict(budget.repayment) : 0
+
+  const chartData = budget
+    ? [
+        { name: "Needs", value: needsTotal, color: CHART_COLORS.needs, sectionKey: "needs" as const },
+        { name: "Wants", value: wantsTotal, color: CHART_COLORS.wants, sectionKey: "wants" as const },
+        { name: "Investments", value: investmentsTotal, color: CHART_COLORS.investments, sectionKey: "investments" as const },
+        { name: "Emergency", value: emergencyTotal, color: CHART_COLORS.emergency, sectionKey: "emergency" as const },
+        { name: "Repayment", value: repaymentTotal, color: CHART_COLORS.repayment, sectionKey: "repayment" as const },
+      ]
+    : []
+
+  const totalBudget = needsTotal + wantsTotal + investmentsTotal + emergencyTotal + repaymentTotal
+  const pct = (value: number) => (totalBudget > 0 ? Math.round((value / totalBudget) * 100) : 0)
+
+  const isLoading = loadingProfile || loadingLatest
+
+  // Section configs for summary cards
+  const sectionCards = budget
+    ? [
+        {
+          title: "Needs",
+          amount: needsTotal,
+          icon: Home,
+          color: CHART_COLORS.needs,
+          description: "Rent, groceries, commute, bills",
+        },
+        {
+          title: "Wants",
+          amount: wantsTotal,
+          icon: ShoppingBag,
+          color: CHART_COLORS.wants,
+          description: "Dining, entertainment, shopping",
+        },
+        {
+          title: "Investments",
+          amount: investmentsTotal,
+          icon: TrendingUp,
+          color: CHART_COLORS.investments,
+          description: "Mutual funds, PPF, stocks",
+        },
+        {
+          title: "Emergency",
+          amount: emergencyTotal,
+          icon: Shield,
+          color: CHART_COLORS.emergency,
+          description: "Rainy day savings",
+        },
+        {
+          title: "Repayment",
+          amount: repaymentTotal,
+          icon: CreditCard,
+          color: CHART_COLORS.repayment,
+          description: "Loan EMIs",
+        },
+      ].filter((c) => c.amount > 0)
+    : []
 
   return (
     <DashboardLayout>
@@ -63,181 +278,334 @@ export default function BudgetPage() {
               AI-powered personalized budget based on your profile
             </p>
           </div>
-          <Button className="w-full sm:w-auto">
-            <Calculator className="w-4 h-4 mr-2" />
-            Recalculate Budget
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/budget/chat">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Budget Chat
+              </Link>
+            </Button>
+            <Button onClick={handleGenerate} disabled={generating || isLoading}>
+              {generating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-2" />
+              )}
+              {generating ? "Generating..." : "Generate Budget"}
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Input Form */}
+          {/* Profile Inputs */}
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="text-base">Your Profile</CardTitle>
-              <CardDescription>
-                Enter your details for a personalized budget
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Your Profile</CardTitle>
+                  <CardDescription>
+                    {editing ? "Edit values and re-generate" : "Pre-filled from your account"}
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={editing ? cancelEdit : enterEditMode}
+                  disabled={loadingProfile || !profile}
+                >
+                  {editing ? (
+                    <>
+                      <Lock className="w-4 h-4 mr-1" />
+                      Lock
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="w-4 h-4 mr-1" />
+                      Edit
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="income">Monthly Income</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    {currencySymbol}
-                  </span>
-                  <Input
-                    id="income"
-                    type="number"
-                    className="pl-7"
-                    value={income}
-                    onChange={(e) => setIncome(e.target.value)}
-                  />
+              {loadingProfile ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Monthly Income */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Monthly Income</Label>
+                    {editing ? (
+                      <Input
+                        type="number"
+                        min="1"
+                        value={editIncome}
+                        onChange={(e) => setEditIncome(e.target.value)}
+                      />
+                    ) : (
+                      <p className="text-sm font-medium">
+                        {profile?.monthly_income ? formatCurrency(profile.monthly_income) : "Not set"}
+                      </p>
+                    )}
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Select value={location} onValueChange={setLocation}>
-                  <SelectTrigger id="location">
-                    <SelectValue placeholder="Select city" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="nyc">New York City</SelectItem>
-                    <SelectItem value="sf">San Francisco</SelectItem>
-                    <SelectItem value="la">Los Angeles</SelectItem>
-                    <SelectItem value="chicago">Chicago</SelectItem>
-                    <SelectItem value="austin">Austin</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  {/* City */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">City</Label>
+                    {editing ? (
+                      <Input
+                        value={editCity}
+                        onChange={(e) => setEditCity(e.target.value)}
+                        placeholder="e.g. Mumbai"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium">{profile?.city || "Not set"}</p>
+                    )}
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="marital">Marital Status</Label>
-                <Select value={maritalStatus} onValueChange={setMaritalStatus}>
-                  <SelectTrigger id="marital">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="single">Single</SelectItem>
-                    <SelectItem value="married">Married</SelectItem>
-                    <SelectItem value="divorced">Divorced</SelectItem>
-                    <SelectItem value="widowed">Widowed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  {/* Neighbourhood */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Neighbourhood</Label>
+                    {editing ? (
+                      <Input
+                        value={editNeighbourhood}
+                        onChange={(e) => setEditNeighbourhood(e.target.value)}
+                        placeholder="e.g. Kharghar"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium">{profile?.neighbourhood || "Not set"}</p>
+                    )}
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dependents">Dependents</Label>
-                  <Input
-                    id="dependents"
-                    type="number"
-                    min="0"
-                    value={dependents}
-                    onChange={(e) => setDependents(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    min="18"
-                    value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                  />
-                </div>
-              </div>
+                  {/* Housing Status */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Housing Status</Label>
+                    {editing ? (
+                      <Select value={editHousing} onValueChange={setEditHousing}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rented">Rented</SelectItem>
+                          <SelectItem value="owned">Owned</SelectItem>
+                          <SelectItem value="family">Family</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm font-medium capitalize">{profile?.housing_status || "Not set"}</p>
+                    )}
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="retirement">Retirement Goal Age</Label>
-                <Input
-                  id="retirement"
-                  type="number"
-                  min="50"
-                  max="80"
-                  value={retirementGoal}
-                  onChange={(e) => setRetirementGoal(e.target.value)}
-                />
-              </div>
+                  {/* Marital Status */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Marital Status</Label>
+                    {editing ? (
+                      <Select value={editMarital} onValueChange={setEditMarital}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="married">Married</SelectItem>
+                          <SelectItem value="divorced">Divorced</SelectItem>
+                          <SelectItem value="widowed">Widowed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm font-medium capitalize">{profile?.marital_status || "Not set"}</p>
+                    )}
+                  </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <Label>Risk Tolerance</Label>
-                  <span className="text-sm text-muted-foreground">
-                    {riskTolerance[0] < 33
-                      ? "Conservative"
-                      : riskTolerance[0] < 66
-                      ? "Moderate"
-                      : "Aggressive"}
-                  </span>
-                </div>
-                <Slider
-                  value={riskTolerance}
-                  onValueChange={setRiskTolerance}
-                  max={100}
-                  step={1}
-                />
-              </div>
+                  {/* Dependents */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Dependents</Label>
+                    {editing ? (
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editDependents}
+                        onChange={(e) => setEditDependents(e.target.value)}
+                      />
+                    ) : (
+                      <p className="text-sm font-medium">{profile?.num_dependents ?? 0}</p>
+                    )}
+                  </div>
 
-              <Button className="w-full">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate Budget
-              </Button>
+                  {/* Income Type */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Income Type</Label>
+                    {editing ? (
+                      <Select value={editIncomeType} onValueChange={setEditIncomeType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="salaried">Salaried</SelectItem>
+                          <SelectItem value="freelance">Freelance</SelectItem>
+                          <SelectItem value="business">Business</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm font-medium capitalize">{profile?.income_type || "Not set"}</p>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
           {/* Budget Output */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Budget Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <BudgetCard
-                title="Needs"
-                amount={4250}
-                percentage={50}
-                icon={Home}
-                color="hsl(var(--chart-1))"
-                description="Housing, food, utilities"
-              />
-              <BudgetCard
-                title="Wants"
-                amount={2550}
-                percentage={30}
-                icon={ShoppingBag}
-                color="hsl(var(--chart-2))"
-                description="Entertainment, dining"
-              />
-              <BudgetCard
-                title="Investments"
-                amount={1275}
-                percentage={15}
-                icon={TrendingUp}
-                color="hsl(var(--primary))"
-                description="Stocks, bonds, funds"
-              />
-              <BudgetCard
-                title="Emergency"
-                amount={425}
-                percentage={5}
-                icon={Shield}
-                color="hsl(var(--chart-3))"
-                description="Rainy day savings"
-              />
-            </div>
+            {budget ? (
+              <>
+                {/* Summary Cards — only show sections with amount > 0 */}
+                <div className={`grid gap-4 sm:grid-cols-2 ${sectionCards.length >= 5 ? "lg:grid-cols-5" : sectionCards.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+                  {sectionCards.map((card) => (
+                    <BudgetCard
+                      key={card.title}
+                      title={card.title}
+                      amount={card.amount}
+                      percentage={pct(card.amount)}
+                      icon={card.icon}
+                      color={card.color}
+                      description={card.description}
+                    />
+                  ))}
+                </div>
 
-            {/* Budget Progress */}
-            <BudgetProgress
-              categories={budgetCategories}
-              totalBudget={8500}
-            />
+                {/* Donut Chart with hover tooltips */}
+                <BudgetChart data={chartData} spendingSummary={spendingSummary} />
 
-            {/* AI Budget Chat */}
-            <AIChatPanel
-              title="Budget AI Assistant"
-              placeholder="Ask me to adjust your budget..."
-              suggestions={budgetSuggestions}
-            />
+                {/* Needs Breakdown */}
+                {(() => {
+                  const entries = Object.entries(normalizeDict(budget.needs))
+                  if (entries.length === 0) return null
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Needs Breakdown</CardTitle>
+                        <CardDescription>Detailed allocation within essential spending</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {entries.map(([key, value]) => (
+                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
+                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
+                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+
+                {/* Wants Breakdown */}
+                {(() => {
+                  const entries = Object.entries(normalizeDict(budget.wants))
+                  if (entries.length === 0) return null
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Wants Breakdown</CardTitle>
+                        <CardDescription>Detailed allocation within lifestyle spending</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {entries.map(([key, value]) => (
+                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
+                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
+                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+
+                {/* Investments Breakdown */}
+                {(() => {
+                  const entries = Object.entries(normalizeDict(budget.investments))
+                  if (entries.length === 0) return null
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Investments Breakdown</CardTitle>
+                        <CardDescription>How your investment allocation is distributed</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {entries.map(([key, value]) => (
+                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
+                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
+                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+
+                {/* Repayment Breakdown — only if loans exist */}
+                {(() => {
+                  const entries = Object.entries(normalizeDict(budget.repayment))
+                  if (entries.length === 0) return null
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Loan Repayment</CardTitle>
+                        <CardDescription>Fixed monthly EMI obligations</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {entries.map(([key, value]) => (
+                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
+                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
+                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+
+                {/* AI Insights */}
+                <AIInsights insights={budget.insights} />
+              </>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-10 w-10 animate-spin text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">Loading your budget...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-10 w-10 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Budget Yet</h3>
+                      <p className="text-muted-foreground mb-4 max-w-sm">
+                        Click &quot;Generate Budget&quot; to create a personalized AI-powered budget based on your profile, loans, and location.
+                      </p>
+                      <Button onClick={handleGenerate} disabled={generating}>
+                        {generating ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 mr-2" />
+                        )}
+                        Generate Budget
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

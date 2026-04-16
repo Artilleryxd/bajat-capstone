@@ -34,6 +34,9 @@ def generate_loan_explanation(
     currency: str = "INR",
     interest_diff: float = 0.0,
     months_diff: int = 0,
+    optimization_mode: str = "cost_time_weighted",
+    avalanche_score: float = 0.0,
+    snowball_score: float = 0.0,
 ) -> Optional[str]:
     """
     Generate a plain-language explanation of the chosen loan repayment strategy.
@@ -47,6 +50,8 @@ def generate_loan_explanation(
     prompt = f"""You are FinSight, a personal finance advisor. Explain the following loan repayment strategy recommendation in 3–4 concise paragraphs.
 
 Strategy chosen: {best_strategy}
+Optimization mode: {optimization_mode} (weighted for both total interest and closure time)
+Strategy score (lower is better): avalanche={avalanche_score:.4f}, snowball={snowball_score:.4f}
 Interest saved vs just paying minimum EMIs: {currency} {total_saved:,.2f}
 Months saved vs just paying minimum EMIs: {months_saved}
 Difference between avalanche and snowball interest: {currency} {interest_diff:,.2f}
@@ -61,6 +66,7 @@ RULES:
 - NEVER name specific stocks, mutual funds, ETFs, lenders, or tax instruments
 - NEVER give tax advice
 - Explain clearly why this strategy was chosen over the alternative
+- Explicitly mention that strategy selection balances both cost and payoff time
 - Mention concrete numbers: interest saved, months saved, and the difference between strategies
 - If surplus is 0, explain that both strategies produce similar results without extra payments, and emphasize the importance of creating even a small surplus
 - Be encouraging and plain-language — no jargon

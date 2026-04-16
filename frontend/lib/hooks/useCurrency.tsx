@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react"
 import { getToken } from "@/lib/auth"
-import { API_BASE_URL } from "@/lib/config"
+import { getCurrencyCode } from "@/lib/utils/countryToCurrency"
 
 interface CurrencyContextValue {
   /** ISO 4217 currency code, e.g. "INR", "USD", "EUR" */
@@ -56,16 +56,20 @@ export function CurrencyProvider({ children, currencyCode: codeProp }: CurrencyP
         const token = getToken()
         if (!token) return
 
-        const res = await fetch(`${API_BASE_URL}/v1/profile/me`, {
+        const res = await fetch("/api/profile/me", {
           headers: { Authorization: `Bearer ${token}` },
         })
 
         if (!res.ok) return
 
         const data = await res.json()
-        if (data.currency) {
-          setCode(data.currency)
-        }
+        // Prefer explicit profile currency; derive from country code as fallback.
+        const resolvedCode =
+          typeof data.currency === "string" && data.currency.trim().length > 0
+            ? data.currency.trim().toUpperCase()
+            : getCurrencyCode(typeof data.country === "string" ? data.country : "")
+
+        setCode(resolvedCode)
       } catch {
         // Silently fall back to default
       }

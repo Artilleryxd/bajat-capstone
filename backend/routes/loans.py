@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from db.supabase_client import supabase
+from db.supabase_client import supabase_admin
 from schemas.loan_schema import LoanCreate
 from services.loan_optimizer import Loan, optimize_loans
 from services.ai_service import generate_loan_explanation
@@ -20,7 +20,7 @@ def get_loans(user: dict = Depends(get_current_user)):
     """Return all active loans for the authenticated user."""
     try:
         res = (
-            supabase.table("loans")
+            supabase_admin.table("loans")
             .select("*")
             .eq("user_id", user["id"])
             .eq("is_active", True)
@@ -41,7 +41,7 @@ def create_loan(body: LoanCreate, user: dict = Depends(get_current_user)):
     try:
         data = body.model_dump()
         data["user_id"] = user["id"]
-        res = supabase.table("loans").insert(data).execute()
+        res = supabase_admin.table("loans").insert(data).execute()
         if not res.data:
             raise Exception("Insert returned no data")
         return {"loan": res.data[0]}
@@ -62,7 +62,7 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
     try:
         # 1. Fetch active loans
         loans_res = (
-            supabase.table("loans")
+            supabase_admin.table("loans")
             .select("*")
             .eq("user_id", user["id"])
             .eq("is_active", True)
@@ -78,7 +78,7 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
 
         # 2. Fetch profile for income + currency
         profile_res = (
-            supabase.table("user_profiles")
+            supabase_admin.table("user_profiles")
             .select("monthly_income,currency,housing_status,num_dependents")
             .eq("id", user["id"])
             .execute()
@@ -118,10 +118,13 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
             currency=currency,
             interest_diff=result["interest_diff"],
             months_diff=result["months_diff"],
+            optimization_mode=result["optimization_basis"]["mode"],
+            avalanche_score=result["strategy_scores"]["avalanche"],
+            snowball_score=result["strategy_scores"]["snowball"],
         ) or ""
 
         # 6. Deactivate previous strategies, insert new one
-        supabase.table("loan_strategies").update({"is_active": False}).eq(
+        supabase_admin.table("loan_strategies").update({"is_active": False}).eq(
             "user_id", user["id"]
         ).execute()
 
@@ -129,7 +132,7 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
         best_full_schedule = result["_full_schedules"][best_key]
         best_comparison = result["comparison"][best_key]
 
-        supabase.table("loan_strategies").insert(
+        supabase_admin.table("loan_strategies").insert(
             {
                 "user_id": user["id"],
                 "strategy_type": best_key,
@@ -164,6 +167,8 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
             "interest_diff": result["interest_diff"],
             "months_diff": result["months_diff"],
             "monthly_surplus": result["monthly_surplus"],
+            "optimization_basis": result["optimization_basis"],
+            "strategy_scores": result["strategy_scores"],
             "ai_explanation": ai_explanation,
         }
 

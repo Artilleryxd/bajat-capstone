@@ -54,4 +54,9 @@ class OptimizeResponse(BaseModel):
     comparison: dict[str, StrategyResult]
     total_saved: float
     months_saved: int
+    interest_diff: float
+    months_diff: int
+    monthly_surplus: float
+    optimization_basis: dict
+    strategy_scores: dict[str, float]
     ai_explanation: str

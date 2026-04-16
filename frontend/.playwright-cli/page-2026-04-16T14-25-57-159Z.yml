@@ -1,0 +1,27 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Welcome back" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Log in to continue your financial journey
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - text: Email
+        - textbox "Email" [ref=e9]:
+          - /placeholder: you@example.com
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: Password
+          - button "Forgot password?" [ref=e13]
+        - generic [ref=e14]:
+          - textbox "Password" [ref=e15]:
+            - /placeholder: ••••••••
+          - button [ref=e16]:
+            - img [ref=e17]
+      - button "Login" [disabled]
+    - paragraph [ref=e20]:
+      - text: Don't have an account?
+      - button "Sign up" [ref=e21]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e27] [cursor=pointer]:
+    - img [ref=e28]
+  - alert [ref=e31]

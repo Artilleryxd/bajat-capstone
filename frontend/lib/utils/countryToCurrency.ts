@@ -74,5 +74,6 @@ export const countryToCurrencyCode: Record<string, string> = {
  * Defaults to USD if the country is not in the map.
  */
 export function getCurrencyCode(countryIsoCode: string): string {
-  return countryToCurrencyCode[countryIsoCode] || "USD";
+  const normalizedCountryCode = countryIsoCode.trim().toUpperCase();
+  return countryToCurrencyCode[normalizedCountryCode] || "USD";
 }

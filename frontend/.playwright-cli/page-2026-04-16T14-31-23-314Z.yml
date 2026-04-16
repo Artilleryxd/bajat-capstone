@@ -1,0 +1,128 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e485]:
+    - complementary [ref=e486]:
+      - generic [ref=e487]:
+        - img [ref=e489]
+        - generic [ref=e492]: Bajat
+      - navigation [ref=e493]:
+        - list [ref=e494]:
+          - listitem [ref=e495]:
+            - link "Dashboard" [ref=e496] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e497]
+              - generic [ref=e502]: Dashboard
+          - listitem [ref=e503]:
+            - link "Expense Tracking" [ref=e504] [cursor=pointer]:
+              - /url: /expenses
+              - img [ref=e505]
+              - generic [ref=e508]: Expense Tracking
+          - listitem [ref=e509]:
+            - link "Smart Budget Planner" [ref=e510] [cursor=pointer]:
+              - /url: /budget
+              - img [ref=e511]
+              - generic [ref=e513]: Smart Budget Planner
+          - listitem [ref=e514]:
+            - link "Loan Optimization" [ref=e515] [cursor=pointer]:
+              - /url: /loans
+              - img [ref=e516]
+              - generic [ref=e518]: Loan Optimization
+          - listitem [ref=e519]:
+            - link "Assets & Liabilities" [ref=e520] [cursor=pointer]:
+              - /url: /assets
+              - img [ref=e521]
+              - generic [ref=e525]: Assets & Liabilities
+          - listitem [ref=e526]:
+            - link "Investment Strategy" [ref=e527] [cursor=pointer]:
+              - /url: /investments
+              - img [ref=e528]
+              - generic [ref=e531]: Investment Strategy
+          - listitem [ref=e532]:
+            - link "Settings" [ref=e533] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e534]
+              - generic [ref=e537]: Settings
+      - button "Collapse" [ref=e539]:
+        - img
+        - generic [ref=e540]: Collapse
+    - generic [ref=e541]:
+      - banner [ref=e542]:
+        - generic [ref=e544]:
+          - img [ref=e545]
+          - searchbox "Search transactions, assets..." [ref=e548]
+        - generic [ref=e549]:
+          - button "AI Assistant" [ref=e550]:
+            - img
+            - generic [ref=e551]: AI Assistant
+          - button "Notifications" [ref=e552]:
+            - img
+            - generic [ref=e554]: Notifications
+          - button "KA" [ref=e555]:
+            - generic [ref=e557]: KA
+      - main [ref=e558]:
+        - generic [ref=e559]:
+          - generic [ref=e560]:
+            - generic [ref=e561]:
+              - heading "Smart Budget Planner" [level=1] [ref=e562]
+              - paragraph [ref=e563]: AI-powered personalized budget based on your profile
+            - generic [ref=e564]:
+              - link "Budget Chat" [ref=e565] [cursor=pointer]:
+                - /url: /budget/chat
+                - img
+                - text: Budget Chat
+              - button "Generate Budget" [ref=e566]:
+                - img
+                - text: Generate Budget
+          - generic [ref=e567]:
+            - generic [ref=e568]:
+              - generic [ref=e570]:
+                - generic [ref=e571]:
+                  - generic [ref=e572]: Your Profile
+                  - generic [ref=e573]: Pre-filled from your account
+                - button "Edit" [ref=e574]:
+                  - img
+                  - text: Edit
+              - generic [ref=e575]:
+                - generic [ref=e576]:
+                  - generic [ref=e577]: Monthly Income
+                  - paragraph [ref=e578]: $50,000
+                - generic [ref=e579]:
+                  - generic [ref=e580]: City
+                  - paragraph [ref=e581]: Panvel
+                - generic [ref=e582]:
+                  - generic [ref=e583]: Neighbourhood
+                  - paragraph [ref=e584]: Kharghar
+                - generic [ref=e585]:
+                  - generic [ref=e586]: Housing Status
+                  - paragraph [ref=e587]: Owned
+                - generic [ref=e588]:
+                  - generic [ref=e589]: Marital Status
+                  - paragraph [ref=e590]: Single
+                - generic [ref=e591]:
+                  - generic [ref=e592]: Dependents
+                  - paragraph [ref=e593]: "0"
+                - generic [ref=e594]:
+                  - generic [ref=e595]: Income Type
+                  - paragraph [ref=e596]: Software Engineer
+            - generic [ref=e599]:
+              - img [ref=e600]
+              - heading "No Budget Yet" [level=3] [ref=e603]
+              - paragraph [ref=e604]: Click "Generate Budget" to create a personalized AI-powered budget based on your profile, loans, and location.
+              - button "Generate Budget" [ref=e605]:
+                - img
+                - text: Generate Budget
+  - region "Notifications alt+T"
+  - generic [ref=e27] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e28]:
+      - img [ref=e29]
+    - generic [ref=e55]:
+      - button "Open issues overlay" [ref=e56]:
+        - generic [ref=e341]:
+          - generic [ref=e342]: "1"
+          - generic [ref=e343]: "2"
+        - generic [ref=e60]:
+          - text: Issue
+          - generic [ref=e344]: s
+      - button "Collapse issues badge" [ref=e61]:
+        - img [ref=e62]
+  - alert [ref=e32]
+  - generic [ref=e484]: ₹0k

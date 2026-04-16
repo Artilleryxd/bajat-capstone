@@ -140,13 +140,33 @@ export default function LoansPage() {
       return
     }
 
+    const parsedBalance = Number.parseFloat(balance)
+    const parsedInterestRate = Number.parseFloat(interestRate)
+    const parsedEmi = Number.parseFloat(emi)
+    const parsedEmisRemaining = Number.parseInt(emisRemaining, 10)
+
+    if (
+      Number.isNaN(parsedBalance) ||
+      Number.isNaN(parsedInterestRate) ||
+      Number.isNaN(parsedEmi) ||
+      Number.isNaN(parsedEmisRemaining) ||
+      parsedBalance <= 0 ||
+      parsedInterestRate <= 0 ||
+      parsedInterestRate > 100 ||
+      parsedEmi <= 0 ||
+      parsedEmisRemaining <= 0
+    ) {
+      toast.error("Please enter valid positive loan values")
+      return
+    }
+
     const payload: LoanCreate = {
       loan_type: loanType,
       lender: lender || undefined,
-      principal_outstanding: parseFloat(balance),
-      interest_rate: parseFloat(interestRate),
-      emi_amount: parseFloat(emi),
-      emis_remaining: parseInt(emisRemaining, 10),
+      principal_outstanding: parsedBalance,
+      interest_rate: parsedInterestRate,
+      emi_amount: parsedEmi,
+      emis_remaining: parsedEmisRemaining,
     }
 
     setIsAddingLoan(true)
@@ -173,7 +193,14 @@ export default function LoansPage() {
         router.replace("/login")
         return
       }
-      if (!res.ok) throw new Error("Failed to add loan")
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(
+          (err?.detail?.message as string | undefined) ??
+            (err?.error as string | undefined) ??
+            "Failed to add loan"
+        )
+      }
       toast.success("Loan added successfully")
       setLoanType("")
       setLender("")
@@ -183,8 +210,8 @@ export default function LoansPage() {
       setEmisRemaining("")
       setShowAddForm(false)
       fetchLoans()
-    } catch {
-      toast.error("Failed to add loan")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add loan")
     } finally {
       setIsAddingLoan(false)
     }
@@ -522,7 +549,7 @@ export default function LoansPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[280px]">
+                <div className="h-70">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={comparisonChartData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
