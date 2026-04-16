@@ -14,7 +14,7 @@ from services.asset_service import (
 
 logger = logging.getLogger(__name__)
 
-SONNET_MODEL = "claude-sonnet-4-20250514"
+SONNET_MODEL = "claude-sonnet-4-6"
 
 
 def _get_anthropic_client():

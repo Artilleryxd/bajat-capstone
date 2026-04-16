@@ -1,5 +1,6 @@
 """Asset service — valuation scraping, projection calculations, and CRUD operations."""
 
+import json
 import logging
 import os
 from datetime import date, datetime
@@ -11,6 +12,8 @@ from db.supabase_client import supabase_admin
 from services.ai_categorizer import classify_financial_item
 
 logger = logging.getLogger(__name__)
+
+SONNET_MODEL = "claude-sonnet-4-6"
 
 # ── Growth rates by asset type (conservative estimates) ──
 GROWTH_RATES: dict[str, float] = {
@@ -264,6 +267,79 @@ def project_asset_value(
     }
 
 
+async def ai_project_asset(asset: dict) -> dict:
+    """
+    Use Claude Sonnet to estimate the current market value and project
+    year-by-year value for the next 5 years.
+    Falls back to deterministic compound growth on any failure.
+    """
+    purchase_price = float(asset.get("purchase_price") or 0)
+    stored_current = float(asset.get("current_value") or purchase_price)
+    asset_type = asset.get("asset_type", "other")
+    name = asset.get("name", "Unknown Asset")
+    metadata = asset.get("metadata") or {}
+    description = str(metadata.get("description") or "")
+    purchase_date = asset.get("purchase_date") or "unknown"
+
+    prompt = f"""You are a financial analyst. Estimate the current market value and 5-year projection for this asset.
+
+Asset Details:
+- Name: {name}
+- Category: {asset_type} (real_estate | vehicle | gold | equity | fd | gadget | other)
+- Description: {description or 'Not provided'}
+- Purchase Price: \u20b9{purchase_price:,.0f}
+- Purchase Date: {purchase_date}
+- Stored Current Value: \u20b9{stored_current:,.0f}
+- Today: April 2026
+
+Reference annual rates: real_estate=7%, gold=8%, vehicle=-15% (depreciates), equity=12%, fd=7%, gadget=-25% (depreciates), other=5%.
+Adjust based on the description, brand, location, and market conditions.
+
+Return ONLY valid JSON (no markdown fences):
+{{
+  "current_value": <number>,
+  "current_reasoning": "<1-2 sentences on why this is the current value>",
+  "projections": {{"1": <val>, "2": <val>, "3": <val>, "4": <val>, "5": <val>}},
+  "projection_reasoning": "<2-3 sentences on the growth/depreciation trend>",
+  "annual_rate": <decimal e.g. 0.07 for 7%>
+}}"""
+
+    try:
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY not set")
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model=SONNET_MODEL,
+            max_tokens=500,
+            temperature=0.2,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = resp.content[0].text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = "\n".join(raw.split("\n")[1:])
+        if raw.endswith("```"):
+            raw = raw[:-3].strip()
+        result = json.loads(raw)
+        logger.info("AI projection for '%s': current=%.0f rate=%.2f", name,
+                     result.get("current_value", 0), result.get("annual_rate", 0))
+        return result
+    except Exception as exc:
+        logger.error("AI projection failed for asset '%s': %s", name, exc)
+        rate = GROWTH_RATES.get(asset_type, 0.05)
+        return {
+            "current_value": stored_current,
+            "current_reasoning": "Stored value used (AI estimation unavailable).",
+            "projections": project_asset_value(stored_current, asset_type, [1, 2, 3, 4, 5]),
+            "projection_reasoning": (
+                f"Projected using standard {asset_type} growth rate of {rate * 100:.0f}% per annum."
+            ),
+            "annual_rate": rate,
+        }
+
+
 # ── CRUD OPERATIONS ──
 
 async def add_asset(user_id: str, data: dict) -> dict:
@@ -279,6 +355,9 @@ async def add_asset(user_id: str, data: dict) -> dict:
     purchase_price = float(data["purchase_price"])
     purchase_date_raw = data.get("purchase_date", date.today().isoformat())
     metadata = data.get("metadata") or {}
+    # Persist description in metadata so it's available for AI projection later
+    if description:
+        metadata["description"] = description
 
     # Parse purchase date
     if isinstance(purchase_date_raw, str):

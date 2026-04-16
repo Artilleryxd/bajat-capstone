@@ -17,6 +17,7 @@ from services.asset_service import (
     add_liability,
     get_all_liabilities,
     project_asset_value,
+    ai_project_asset,
 )
 from services.networth_service import (
     get_net_worth_summary,
@@ -218,17 +219,17 @@ async def asset_drilldown_route(
         if not asset:
             raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "Asset not found"})
 
-        current_value = float(asset.get("current_value", 0) or asset.get("purchase_price", 0) or 0)
         purchase_price = float(asset.get("purchase_price", 0) or 0)
 
-        # Appreciation calculation
+        # AI-powered valuation + 5-year projection via Claude Sonnet
+        ai_proj = await ai_project_asset(asset)
+        current_value = ai_proj["current_value"]
+
+        # Appreciation vs purchase price
         if purchase_price > 0:
             appreciation_pct = round(((current_value - purchase_price) / purchase_price) * 100, 2)
         else:
             appreciation_pct = 0
-
-        # Future projections
-        projections = project_asset_value(current_value, asset["asset_type"])
 
         return {
             "status": "success",
@@ -236,8 +237,9 @@ async def asset_drilldown_route(
             "current_value": current_value,
             "purchase_price": purchase_price,
             "appreciation_pct": appreciation_pct,
-            "appreciation_rate": float(asset.get("appreciation_rate", 0) or 0),
-            "projections": projections,
+            "appreciation_rate": ai_proj.get("annual_rate", float(asset.get("appreciation_rate", 0) or 0)),
+            "projections": ai_proj["projections"],
+            "ai_projection": ai_proj,
         }
     except HTTPException:
         raise

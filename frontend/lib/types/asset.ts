@@ -92,6 +92,14 @@ export interface NetWorthTimeline {
   timeline: TimelineEntry[];
 }
 
+export interface AiProjection {
+  current_value: number;
+  current_reasoning: string;
+  projections: Record<string, number>;
+  projection_reasoning: string;
+  annual_rate: number;
+}
+
 export interface DrilldownData {
   asset: Asset;
   current_value: number;
@@ -99,6 +107,7 @@ export interface DrilldownData {
   appreciation_pct: number;
   appreciation_rate: number;
   projections: Record<string, number>;
+  ai_projection: AiProjection | null;
 }
 
 // ── API Response wrappers ──

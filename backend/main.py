@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, profile, expenses, loans
+from routes import auth, profile, expenses, loans, assets
 from api import budget, chat
 from dotenv import load_dotenv
 
@@ -22,6 +22,7 @@ app.include_router(expenses.router)
 app.include_router(loans.router)
 app.include_router(budget.router)
 app.include_router(chat.router)
+app.include_router(assets.router)
 
 @app.get("/")
 async def root():

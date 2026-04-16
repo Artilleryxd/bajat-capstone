@@ -137,6 +137,43 @@ Text:
         return []
 
 
+def classify_financial_item(text: str) -> dict:
+    """
+    Classify a financial item (asset or liability) from a text description.
+    Returns dict with: type, asset_type, liability_type, confidence.
+    Falls back to {"type": "asset", "asset_type": "other", ...} on failure.
+    """
+    prompt = f"""Classify this financial item. Return ONLY valid JSON, no markdown.
+
+Item: {text}
+
+asset_type options (if asset): real_estate, vehicle, gold, equity, fd, gadget, other
+liability_type options (if liability): home_loan, car_loan, personal_loan, education_loan, credit_card, other
+
+Return:
+{{"type": "asset" or "liability", "asset_type": <string or null>, "liability_type": <string or null>, "confidence": <float 0-1>}}"""
+
+    try:
+        client = _get_client()
+        response = client.messages.create(
+            model=HAIKU_MODEL,
+            max_tokens=150,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw_text = response.content[0].text.strip()
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("\n", 1)[1]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3].strip()
+        result = json.loads(raw_text)
+        if "asset_type" not in result:
+            result["asset_type"] = "other"
+        return result
+    except Exception as e:
+        logger.error("classify_financial_item failed: %s", e)
+        return {"type": "asset", "asset_type": "other", "liability_type": None, "confidence": 0.5}
+
+
 def ai_extract_receipt(text: str) -> Optional[dict]:
     """
     Use Haiku to extract structured data from receipt OCR text.
