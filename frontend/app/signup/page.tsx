@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { signupSchema, SignupFormValues } from "@/lib/validation/signupSchema";
 import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
 import { API_BASE_URL } from "@/lib/config";
-import { getToken, setToken } from "@/lib/auth";
+import { getToken, setToken, setRefreshToken } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -64,6 +64,7 @@ export default function SignupPage() {
       }
 
       setToken(loginData.access_token);
+      if (loginData.refresh_token) setRefreshToken(loginData.refresh_token);
       router.replace("/onboarding");
 
     } catch (error: any) {

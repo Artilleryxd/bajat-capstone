@@ -52,6 +52,10 @@ async def create_manual_expense(user_id: str, data: dict) -> dict:
             confidence = r.get("confidence")
             merchant = r.get("merchant")
 
+    # Normalize legacy "desires" → "wants"
+    if category == "desires":
+        category = "wants"
+
     expense_date = data.get("expense_date", date.today().isoformat())
     if isinstance(expense_date, date):
         expense_date = expense_date.isoformat()
@@ -223,11 +227,16 @@ async def confirm_expenses(user_id: str, expenses: list[dict]) -> int:
             month_year = date(date.today().year, date.today().month, 1).isoformat()
             expense_date = date.today().isoformat()
 
+        # Normalize legacy "desires" → "wants"
+        cat = e.get("category")
+        if cat == "desires":
+            cat = "wants"
+
         rows.append({
             "user_id": user_id,
             "description": e.get("description", "Unknown"),
             "amount": abs(float(e.get("amount", 0))),
-            "category": e.get("category"),
+            "category": cat,
             "subcategory": e.get("subcategory"),
             "merchant": e.get("merchant"),
             "source": e.get("source", "manual"),
@@ -269,20 +278,23 @@ async def get_monthly_expenses(user_id: str, month_year: str) -> dict:
         logger.error("Failed to fetch expenses: %s", e)
         expenses = []
 
-    # Build category summary
+    # Build category summary — desires is folded into wants
     summary: dict = {
         "total": 0,
         "categories": {
             "needs": {"total": 0, "count": 0},
             "wants": {"total": 0, "count": 0},
-            "desires": {"total": 0, "count": 0},
             "investments": {"total": 0, "count": 0},
+            "repayments": {"total": 0, "count": 0},
         },
     }
     for exp in expenses:
         amount = float(exp.get("amount", 0))
         summary["total"] += amount
         cat = exp.get("category")
+        # Normalize legacy desires rows stored before the migration
+        if cat == "desires":
+            cat = "wants"
         if cat and cat in summary["categories"]:
             summary["categories"][cat]["total"] += amount
             summary["categories"][cat]["count"] += 1

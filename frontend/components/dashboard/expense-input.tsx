@@ -274,6 +274,7 @@ export function ExpenseInput({ className, onManualAdded, onParseComplete }: Expe
                     <SelectItem value="wants">Wants</SelectItem>
                     <SelectItem value="desires">Desires</SelectItem>
                     <SelectItem value="investments">Investments</SelectItem>
+                    <SelectItem value="repayments">Repayments</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

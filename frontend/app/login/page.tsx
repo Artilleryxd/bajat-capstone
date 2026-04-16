@@ -7,7 +7,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { loginSchema, LoginFormValues } from "@/lib/validation/loginSchema";
 import { API_BASE_URL } from "@/lib/config";
-import { getToken, setToken, logout } from "@/lib/auth";
+import { getToken, setToken, setRefreshToken, logout } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -82,6 +82,7 @@ export default function LoginPage() {
       }
 
       setToken(responseData.access_token);
+      if (responseData.refresh_token) setRefreshToken(responseData.refresh_token);
 
       if (responseData.status === "ONBOARDING_REQUIRED") {
         router.replace("/onboarding");

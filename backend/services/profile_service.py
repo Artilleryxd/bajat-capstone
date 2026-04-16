@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 import logging
-from db.supabase_client import supabase
+from db.supabase_client import supabase, supabase_admin
 from schemas.profile_schema import OnboardingRequest
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class ProfileService:
     @staticmethod
     def get_profile(user_id: str):
         try:
-            res = supabase.table("user_profiles").select("*").eq("id", user_id).execute()
+            res = supabase_admin.table("user_profiles").select("*").eq("id", user_id).execute()
 
             if not res.data or len(res.data) == 0:
                 raise HTTPException(

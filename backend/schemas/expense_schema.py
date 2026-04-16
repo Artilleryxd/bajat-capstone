@@ -9,7 +9,7 @@ class ManualExpenseCreate(BaseModel):
     """Schema for creating a single manual expense."""
     amount: float = Field(..., gt=0, description="Expense amount")
     description: str = Field(..., min_length=1, max_length=500)
-    category: str = Field(..., pattern=r"^(needs|wants|desires|investments)$")
+    category: str = Field(..., pattern=r"^(needs|wants|investments|repayments)$")
     expense_date: date = Field(default_factory=date.today)
 
 

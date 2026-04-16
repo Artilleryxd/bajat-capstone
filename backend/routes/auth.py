@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 import logging
+from pydantic import BaseModel
 from schemas.auth_schema import SignupRequest, LoginRequest, ForgotPasswordRequest
 from services.auth_service import AuthService
-from db.supabase_client import supabase
+from db.supabase_client import supabase, supabase_admin
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ async def login(request: LoginRequest):
             raise Exception("Authentication failed")
 
         profile = (
-            supabase.table("user_profiles")
+            supabase_admin.table("user_profiles")
             .select("onboarding_complete")
             .eq("id", user.id)
             .single()
@@ -40,6 +41,7 @@ async def login(request: LoginRequest):
             response = {
                 "status": "ONBOARDING_REQUIRED",
                 "access_token": session.access_token,
+                "refresh_token": session.refresh_token,
                 "user_id": user.id,
             }
             logger.info("Login response for user_id=%s status=ONBOARDING_REQUIRED", user.id)
@@ -48,6 +50,7 @@ async def login(request: LoginRequest):
         response = {
             "status": "LOGIN_SUCCESS",
             "access_token": session.access_token,
+            "refresh_token": session.refresh_token,
             "user_id": user.id,
         }
         logger.info("Login response for user_id=%s status=LOGIN_SUCCESS", user.id)
@@ -61,3 +64,25 @@ async def login(request: LoginRequest):
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
     return AuthService.forgot_password(request)
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+@router.post("/refresh")
+async def refresh_token(body: RefreshRequest):
+    try:
+        res = supabase.auth.refresh_session(body.refresh_token)
+        session = res.session
+        if not session:
+            raise Exception("Refresh failed")
+        return {
+            "access_token": session.access_token,
+            "refresh_token": session.refresh_token,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "REFRESH_FAILED", "message": "Session refresh failed", "detail": str(e)},
+        )

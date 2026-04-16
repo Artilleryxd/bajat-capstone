@@ -17,6 +17,14 @@ interface BudgetChartProps {
   spendingSummary?: SpendingSummary | null
 }
 
+function getSpentForSection(
+  sectionKey: BudgetChartDatum["sectionKey"],
+  spendingSummary?: SpendingSummary | null
+): number {
+  if (!spendingSummary) return 0
+  return spendingSummary[sectionKey] ?? 0
+}
+
 function SpentTooltipContent({
   active,
   payload,
@@ -32,7 +40,7 @@ function SpentTooltipContent({
 
   const item = payload[0].payload
   const budgeted = item.value
-  const spent = spendingSummary?.[item.sectionKey] ?? 0
+  const spent = getSpentForSection(item.sectionKey, spendingSummary)
   const pctSpent = budgeted > 0 ? Math.min(Math.round((spent / budgeted) * 100), 100) : 0
   const isOver = spent > budgeted
 
@@ -55,7 +63,6 @@ function SpentTooltipContent({
             {formatCurrency(spent)}
           </span>
         </div>
-        {/* Mini progress bar */}
         <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden mt-1">
           <div
             className="h-full rounded-full transition-all"
@@ -77,7 +84,6 @@ function SpentTooltipContent({
 export function BudgetChart({ data, spendingSummary }: BudgetChartProps) {
   const { formatCurrency } = useCurrency()
 
-  // Filter out zero-value sections
   const visibleData = data.filter((d) => d.value > 0)
   const total = visibleData.reduce((sum, item) => sum + item.value, 0)
 
@@ -129,7 +135,7 @@ export function BudgetChart({ data, spendingSummary }: BudgetChartProps) {
 
             {visibleData.map((item) => {
               const pct = total > 0 ? Math.round((item.value / total) * 100) : 0
-              const spent = spendingSummary?.[item.sectionKey] ?? 0
+              const spent = getSpentForSection(item.sectionKey, spendingSummary)
               const spentPct = item.value > 0 ? Math.min(Math.round((spent / item.value) * 100), 999) : 0
 
               return (
@@ -144,7 +150,6 @@ export function BudgetChart({ data, spendingSummary }: BudgetChartProps) {
                       <p className="text-xs text-muted-foreground">{pct}%</p>
                     </div>
                   </div>
-                  {/* Spend progress bar in legend */}
                   {spendingSummary && (
                     <div className="space-y-0.5">
                       <div className="h-1 w-full rounded-full bg-muted overflow-hidden">

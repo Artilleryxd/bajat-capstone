@@ -1,0 +1,64 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+
+5 0 obj
+<< /Length 1436 >>
+stream
+BT
+/F1 10 Tf
+40 780 Td
+16 TL
+(HDFC Bank - Monthly Account Statement) Tj T*
+(Account: XXXX XXXX XXXX 4521) Tj T*
+(Period: 01-Apr-2026 to 18-Apr-2026) Tj T*
+() Tj T*
+(Date         Narration                              Debit       Credit) Tj T*
+(-------------------------------------------------------------------) Tj T*
+(01-04-2026   Salary Credit Apr 2026                             95000.00) Tj T*
+(02-04-2026   HDFC Home Loan EMI                     35000.00) Tj T*
+(03-04-2026   BigBazaar Groceries Kharghar            3200.00) Tj T*
+(05-04-2026   Swiggy Order SW98765                    1800.00) Tj T*
+(07-04-2026   Netflix Monthly Subscription             649.00) Tj T*
+(08-04-2026   Ola Cabs Daily Commute                   550.00) Tj T*
+(10-04-2026   Zerodha SIP Mutual Fund                10000.00) Tj T*
+(12-04-2026   City Power Electricity Bill              2100.00) Tj T*
+(13-04-2026   Amazon Shopping                         4500.00) Tj T*
+(15-04-2026   ICICI Car Loan EMI                     12000.00) Tj T*
+(15-04-2026   Apollo Pharmacy Medical Expenses         890.00) Tj T*
+(16-04-2026   Zomato Food Delivery                    1200.00) Tj T*
+(17-04-2026   Airtel Broadband Bill                    999.00) Tj T*
+(18-04-2026   BookMyShow Movie Tickets                  800.00) Tj T*
+(-------------------------------------------------------------------) Tj T*
+(Total Debits: 73688.00    Total Credits: 95000.00) Tj T*
+ET
+
+endstream
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000059 00000 n 
+0000000117 00000 n 
+0000000244 00000 n 
+0000000313 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1802
+%%EOF

@@ -63,7 +63,7 @@ async def _fetch_user_loans_assets(user_id: str) -> tuple[list[dict[str, Any]], 
     assets: list[dict[str, Any]] = []
 
     try:
-        loans_result = supabase_admin.table("loans").select("*").eq("user_id", user_id).execute()
+        loans_result = supabase_admin.table("loans").select("*").eq("user_id", user_id).eq("is_active", True).execute()
         if loans_result.data:
             loans = loans_result.data
     except Exception as exc:
@@ -208,18 +208,17 @@ async def latest_budget(user: dict = Depends(get_current_user)):
 @router.get("/spending-summary")
 async def spending_summary(user: dict = Depends(get_current_user)):
     """
-    Return current month's actual spending grouped by budget category.
+    Return all-time actual spending grouped by budget category.
     Used by the frontend to show "spent vs budgeted" on chart hover.
     """
     try:
-        today = date.today()
-        month_year = date(today.year, today.month, 1).isoformat()
+        current_month_str = date.today().replace(day=1).isoformat()
 
         result = (
             supabase_admin.table("expenses")
             .select("amount,category")
             .eq("user_id", user["id"])
-            .eq("month_year", month_year)
+            .eq("month_year", current_month_str)
             .execute()
         )
 
@@ -236,9 +235,11 @@ async def spending_summary(user: dict = Depends(get_current_user)):
         # Map expense categories to budget sections
         category_mapping = {
             "needs": "needs",
+            # wants + desires are clubbed into wants for donut usage
             "wants": "wants",
-            "desires": "wants",  # desires map to wants
+            "desires": "wants",
             "investments": "investments",
+            "repayments": "repayment",
         }
 
         for exp in expenses:
@@ -248,17 +249,25 @@ async def spending_summary(user: dict = Depends(get_current_user)):
             if budget_section:
                 summary[budget_section] += round(amount, 2)
 
-        # Repayment spend = sum of EMIs from loans (they're fixed monthly)
-        try:
-            loans_result = supabase_admin.table("loans").select("*").eq("user_id", user["id"]).execute()
-            if loans_result.data:
-                from services.budget_ai import _extract_total_emi
-                summary["repayment"] = round(_extract_total_emi(loans_result.data), 2)
-        except Exception as exc:
-            logger.warning("Could not fetch loan EMIs for spending summary: %s", exc)
+        # If no repayment expenses have been tracked yet, fall back to loan EMI totals
+        # so loans always reflect in the repayment hover as soon as they're added.
+        if summary["repayment"] == 0.0:
+            try:
+                loans_result = (
+                    supabase_admin.table("loans")
+                    .select("emi_amount")
+                    .eq("user_id", user["id"])
+                    .eq("is_active", True)
+                    .execute()
+                )
+                if loans_result.data:
+                    from services.budget_ai import _extract_total_emi
+                    summary["repayment"] = round(_extract_total_emi(loans_result.data), 2)
+            except Exception as exc:
+                logger.warning("Could not fetch loan EMIs for spending summary: %s", exc)
 
         return {
-            "month_year": month_year,
+            "period": current_month_str,
             "summary": summary,
         }
     except Exception as exc:

@@ -43,7 +43,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { useCurrency } from "@/lib/hooks/useCurrency"
-import { getToken, logout } from "@/lib/auth"
+import { fetchWithAuth, logout } from "@/lib/auth"
 import type { LoanResponse, LoanCreate, OptimizeResult } from "@/lib/types/loan"
 
 const LOAN_TYPE_OPTIONS = [
@@ -103,17 +103,7 @@ export default function LoansPage() {
   const fetchLoans = useCallback(async () => {
     setLoadingLoans(true)
     try {
-      const token = getToken()
-      if (!token) {
-        toast.error("Session expired. Please log in again.")
-        logout()
-        router.replace("/login")
-        return
-      }
-
-      const res = await fetch("/api/loans", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetchWithAuth("/api/loans")
       if (res.status === 401) {
         toast.error("Session expired. Please log in again.")
         logout()
@@ -171,20 +161,9 @@ export default function LoansPage() {
 
     setIsAddingLoan(true)
     try {
-      const token = getToken()
-      if (!token) {
-        toast.error("Session expired. Please log in again.")
-        logout()
-        router.replace("/login")
-        return
-      }
-
-      const res = await fetch("/api/loans", {
+      const res = await fetchWithAuth("/api/loans", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
       if (res.status === 401) {
@@ -220,18 +199,7 @@ export default function LoansPage() {
   const handleOptimize = async () => {
     setIsOptimizing(true)
     try {
-      const token = getToken()
-      if (!token) {
-        toast.error("Session expired. Please log in again.")
-        logout()
-        router.replace("/login")
-        return
-      }
-
-      const res = await fetch("/api/loans/optimize", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetchWithAuth("/api/loans/optimize", { method: "POST" })
       if (res.status === 401) {
         toast.error("Session expired. Please log in again.")
         logout()

@@ -2,7 +2,7 @@
  * Expense module type definitions.
  */
 
-export type ExpenseCategory = "needs" | "wants" | "desires" | "investments";
+export type ExpenseCategory = "needs" | "wants" | "desires" | "investments" | "repayments";
 
 export type ExpenseSource = "manual" | "csv" | "pdf" | "receipt" | "ai";
 

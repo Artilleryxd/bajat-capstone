@@ -31,13 +31,13 @@ def categorize_expenses_batch(expenses: list[dict]) -> list[dict]:
     if not expenses:
         return []
 
-    prompt = f"""Categorize each transaction into one of these categories: needs, wants, desires, investments, income.
+    prompt = f"""Categorize each transaction into one of these categories: needs, wants, investments, repayments, income.
 
 Definitions:
 - needs: Essential living expenses (rent, groceries, utilities, medicine, transport, insurance)
-- wants: Non-essential but common spending (dining out, streaming, casual shopping, coffee)
-- desires: Luxury or aspirational spending (travel, gadgets, premium brands, entertainment)
+- wants: Non-essential spending, including both everyday treats and luxuries (dining out, streaming, shopping, coffee, travel, gadgets, premium brands, entertainment, subscriptions)
 - investments: Financial growth (SIP, stocks, FD, PPF, NPS, mutual funds, crypto)
+- repayments: Loan EMI payments, credit card bill payments, debt repayments, home/car/personal loan instalments
 - income: Salary credits, deposits, refunds, cashback, interest received, or any money coming IN
 
 Return ONLY a JSON array. No other text, no markdown, no explanation.

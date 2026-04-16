@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/v1/budget/spending-summary`, {
+    const res = await fetch(`${API_BASE_URL}/budget/spending-summary`, {
       headers: { Authorization: authHeader },
     });
 

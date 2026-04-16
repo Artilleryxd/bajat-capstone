@@ -15,7 +15,7 @@ from services.rent_scraper import get_rent_estimate
 
 logger = logging.getLogger(__name__)
 
-SONNET_MODEL = "claude-sonnet-4-20250514"
+SONNET_MODEL = "claude-sonnet-4-6"
 
 
 class BudgetInput(BaseModel):

@@ -8,6 +8,7 @@ export const CATEGORY_COLORS = {
   wants: "#3B82F6",
   desires: "#F59E0B",
   investments: "#10B981",
+  repayments: "#EF4444",
 } as const;
 
 export const CATEGORY_LABELS = {
@@ -15,6 +16,7 @@ export const CATEGORY_LABELS = {
   wants: "Wants",
   desires: "Desires",
   investments: "Investments",
+  repayments: "Repayments",
 } as const;
 
 export type ExpenseCategory = keyof typeof CATEGORY_COLORS;

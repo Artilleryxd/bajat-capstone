@@ -34,7 +34,7 @@ import { BudgetChart } from "@/components/BudgetChart"
 import { BudgetCard } from "@/components/dashboard/budget-cards"
 import { AIInsights } from "@/components/AIInsights"
 import { useCurrency } from "@/lib/hooks/useCurrency"
-import { getToken } from "@/lib/auth"
+import { getToken, fetchWithAuth } from "@/lib/auth"
 import type { BudgetOutput, SpendingSummary } from "@/lib/types/budget"
 
 interface UserProfile {
@@ -105,11 +105,12 @@ export default function BudgetPage() {
 
   // Budget state
   const [budget, setBudget] = useState<BudgetOutput | null>(null)
-  const [generating, setGenerating] = useState(false)
-  const [loadingLatest, setLoadingLatest] = useState(true)
 
   // Spending summary (for hover tooltips)
   const [spendingSummary, setSpendingSummary] = useState<SpendingSummary | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [loadingLatest, setLoadingLatest] = useState(true)
+
 
   const effectiveProfile: UserProfile | null = profile
     ? {
@@ -124,9 +125,7 @@ export default function BudgetPage() {
     try {
       const token = getToken()
       if (!token) { router.push("/login"); return }
-      const res = await fetch("/api/profile/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetchWithAuth("/api/profile/me")
       if (res.status === 401) { router.push("/login"); return }
       if (res.status === 404) { router.push("/onboarding"); return }
       if (!res.ok) throw new Error("Failed to fetch profile")
@@ -138,14 +137,37 @@ export default function BudgetPage() {
     }
   }, [router])
 
+  // Fetch spending summary
+  const fetchSpendingSummary = useCallback(async () => {
+    try {
+      const res = await fetchWithAuth("/api/budget/spending-summary")
+      if (!res.ok) return
+      const data = await res.json()
+      const rawSummary = data.summary ?? null
+      if (!rawSummary) {
+        setSpendingSummary(null)
+        return
+      }
+
+      const normalizedSummary: SpendingSummary = {
+        needs: Number(rawSummary.needs ?? 0),
+        // Wants on donut should include both wants + desires from expenses table.
+        wants: Number(rawSummary.wants ?? 0) + Number(rawSummary.desires ?? 0),
+        investments: Number(rawSummary.investments ?? rawSummary.investment ?? 0),
+        repayment: Number(rawSummary.repayment ?? rawSummary.repayments ?? 0),
+        emergency: Number(rawSummary.emergency ?? 0),
+      }
+
+      setSpendingSummary(normalizedSummary)
+    } catch {
+      // silently ignore
+    }
+  }, [])
+
   // Fetch latest saved budget
   const fetchLatestBudget = useCallback(async () => {
     try {
-      const token = getToken()
-      if (!token) return
-      const res = await fetch("/api/budget/latest", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetchWithAuth("/api/budget/latest")
       if (res.status === 404) return
       if (!res.ok) throw new Error("Failed to fetch budget")
       const data: BudgetOutput = await res.json()
@@ -157,21 +179,6 @@ export default function BudgetPage() {
     }
   }, [])
 
-  // Fetch spending summary
-  const fetchSpendingSummary = useCallback(async () => {
-    try {
-      const token = getToken()
-      if (!token) return
-      const res = await fetch("/api/budget/spending-summary", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      setSpendingSummary(data.summary ?? null)
-    } catch {
-      // silently ignore
-    }
-  }, [])
 
   useEffect(() => {
     fetchProfile()
@@ -251,14 +258,9 @@ export default function BudgetPage() {
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      const token = getToken()
-      if (!token) { router.push("/login"); return }
-      const res = await fetch("/api/budget/generate", {
+      const res = await fetchWithAuth("/api/budget/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildGenerateOverrides()),
       })
       if (!res.ok) {

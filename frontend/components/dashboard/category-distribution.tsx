@@ -1,8 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { cn } from "@/lib/utils"
 import { useCurrency } from "@/lib/hooks/useCurrency"
 
@@ -73,9 +72,6 @@ export function CategoryDistribution({ data, className }: CategoryDistributionPr
                   <span className="font-medium">{category.name}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="font-mono">
-                    {category.percentage}%
-                  </Badge>
                   <span className="font-medium text-sm w-20 text-right">
                     {formatCurrency(category.value)}
                   </span>

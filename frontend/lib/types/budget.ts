@@ -45,8 +45,11 @@ export interface BudgetOutput {
 
 export interface SpendingSummary {
   needs: number
+  desires?: number
   wants: number
+  investment?: number
   investments: number
+  repayments?: number
   repayment: number
   emergency: number
 }
