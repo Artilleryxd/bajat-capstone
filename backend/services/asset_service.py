@@ -11,6 +11,7 @@ import httpx
 
 from db.supabase_client import supabase_admin
 from services.ai_categorizer import classify_financial_item
+from services.market_data_service import get_market_context
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,24 @@ async def ai_project_asset(asset: dict) -> dict:
         if gold_inr:
             gold_context = f"\n- Live 24K Gold Rate: ₹{gold_inr:,.0f}/gram (use this as your anchor for gold valuation)"
 
+    # Fetch live market context for real estate, vehicles, and land via web search
+    market_context_block = ""
+    if asset_type in ("real_estate", "vehicle") or (
+        asset_type == "other"
+        and any(kw in (name + description).lower() for kw in ["land", "plot", "agricultural", "farm", "acre"])
+    ):
+        try:
+            market_data = await asyncio.to_thread(get_market_context, asset_type, name, description)
+            if market_data:
+                market_context_block = (
+                    "\n\n## LIVE MARKET DATA (web-searched, use as primary reference — "
+                    "override static benchmarks below):\n"
+                    + json.dumps(market_data, indent=2)
+                )
+                logger.info("Market context injected for '%s' (%s)", name, asset_type)
+        except Exception as exc:
+            logger.warning("Market context fetch skipped for '%s': %s", name, exc)
+
     prompt = f"""You are a senior Indian financial analyst with deep expertise in asset valuation (April 2026).
 
 Estimate the CURRENT MARKET VALUE of this asset using real market knowledge.
@@ -90,26 +109,30 @@ Asset Details:
 - Category: {asset_type}
 - Description: {description or "Not provided"}
 - Purchase Price: ₹{purchase_price:,.0f}
-- Purchase Date: {purchase_date}{gold_context}
+- Purchase Date: {purchase_date}{gold_context}{market_context_block}
 
-Valuation guidelines by asset type:
-- real_estate: Use price per sq ft for the specific city/locality from the description.
-  Benchmarks (April 2026): Mumbai premium ₹25,000–80,000/sqft, Mumbai suburbs ₹12,000–25,000/sqft,
-  Bangalore premium ₹12,000–25,000/sqft, Bangalore suburbs ₹6,000–12,000/sqft,
-  Delhi/NCR ₹8,000–30,000/sqft, Pune ₹7,000–16,000/sqft, Hyderabad ₹6,000–15,000/sqft,
-  Chennai ₹6,000–14,000/sqft, tier-2 cities ₹3,000–8,000/sqft.
-  If area (sqft) is not mentioned, estimate from description context.
+Valuation guidelines by asset type (use LIVE MARKET DATA above when available — it takes priority):
+- real_estate (apartments/flats): If live market data is provided above, use price_per_sqft_typical
+  multiplied by the area (sqft) from the description. If no area in description, estimate from
+  purchase price context. Fallback benchmarks (April 2026): Mumbai premium ₹25,000–80,000/sqft,
+  Mumbai suburbs ₹12,000–25,000/sqft, Bangalore premium ₹12,000–25,000/sqft,
+  Bangalore suburbs ₹6,000–12,000/sqft, Delhi/NCR ₹8,000–30,000/sqft,
+  Pune ₹7,000–16,000/sqft, Hyderabad ₹6,000–15,000/sqft, Chennai ₹6,000–14,000/sqft.
+- real_estate (land/plots): If live market data is provided, use market_rate_per_sqft × area.
+  Also compare against circle_rate_per_sqft (market is typically 10–50% above circle rate).
 - gold/jewelry: Use the live gold rate above (if provided) per gram.
-  Extract weight from description (e.g. "10g necklace", "50g bar"). For jewelry, deduct 15–20% making charges from melt value. For coins/bars, use full melt value. If no weight given, reason from purchase price and current rates.
-- vehicle (cars/bikes): Use Indian used vehicle market prices. Reference Maruti Suzuki, Hyundai, Honda etc. depreciating 15% year 1, 10% years 2–5. Premium/luxury cars (BMW, Mercedes, Porsche) depreciate faster in rupee terms but retain value internationally.
-- watches/luxury_watches: Consumer electronics depreciate 25%/yr, but LUXURY watches (Rolex, Omega, Patek Philippe, AP, IWC, Tag Heuer, Seiko, Casio G-Shock) follow different rules:
-  Rolex: appreciates 5–15%/yr in INR, models like Submariner/Datejust holding 90–120%+ of purchase price.
-  Omega/IWC/Panerai: hold 60–80% of purchase value. Tag Heuer/Tissot: hold 40–60%.
-  Entry-level fashion watches: depreciate like gadgets.
-  Base your estimate on the brand and model from the name/description.
-- equity/stocks/mutual_funds: Use purchase value + estimated returns (NIFTY 50 index: ~12% CAGR, small cap: ~15%, large cap: ~10%, international: ~8%). If specific stock/fund is named, use your knowledge.
-- fd (fixed deposit): Calculate maturity value using standard FD rates (SBI: 6.5–7.1%, HDFC: 7–7.5%, corporate FDs: 7.5–8.5%). If rate is in the description, use it.
-- gadget (phones/laptops/electronics): iPhones retain value better (60–70% after 1yr), Android flagships 40–60%, budget phones 20–40%. MacBooks hold value better than Windows laptops.
+  Extract weight from description (e.g. "10g necklace", "50g bar"). For jewelry, deduct 15–20%
+  making charges from melt value. For coins/bars use full melt value.
+- vehicle (cars/bikes): If live market data is provided above, use market_value_typical as anchor,
+  adjusting for actual condition vs typical. Fallback: Maruti/Hyundai/Honda depreciate 15% yr1,
+  10% yrs 2–5; luxury (BMW, Mercedes) depreciate faster.
+- watches/luxury_watches: LUXURY watches (Rolex, Omega, Patek Philippe, AP, IWC, Tag Heuer)
+  follow different rules. Rolex: appreciates 5–15%/yr; Omega/IWC: hold 60–80% of purchase price.
+  Entry-level fashion watches depreciate like gadgets.
+- equity/stocks/mutual_funds: NIFTY 50 index ~12% CAGR, small cap ~15%, large cap ~10%.
+- fd (fixed deposit): Calculate maturity value using standard FD rates (SBI: 6.5–7.1%,
+  HDFC: 7–7.5%). Use rate from description if provided.
+- gadget: iPhones retain value better (60–70% yr1), Android flagships 40–60%, budget 20–40%.
 - other: Use contextual market knowledge and reasonable judgment.
 
 Return ONLY valid JSON (no markdown, no explanation outside the JSON):
@@ -129,7 +152,7 @@ Return ONLY valid JSON (no markdown, no explanation outside the JSON):
         client = anthropic.Anthropic(api_key=api_key)
         resp = client.messages.create(
             model=SONNET_MODEL,
-            max_tokens=600,
+            max_tokens=800,
             temperature=0.1,
             messages=[{"role": "user", "content": prompt}],
         )
