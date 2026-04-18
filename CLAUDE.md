@@ -35,6 +35,35 @@ For detailed guidelines, see:
 
 ---
 
+## Investment Strategy Module
+
+### Overview
+
+Generates an AI-powered investment strategy from the user's live financial data (profile, loans, assets).  No specific funds or securities are ever recommended — only asset class percentages. The module supports temporary profile overrides for "what-if" simulations (not persisted to DB).
+
+### Key behaviours
+
+- **Risk score** is calculated deterministically (TRD §10.3): age, income type, dependents, DTI, net worth, investment experience.
+- **Debt-heavy check**: DTI ≥ 40% → `is_debt_heavy = true` → prominent warning card + conservative allocation.
+- **First-time flow**: no `investment_strategies` row → frontend shows goal setup form (goal amount, current portfolio value, SIP date, optional portfolio description/upload).
+- **Temporary overrides**: `POST /v1/investment/strategy` with `overrides` field → strategy is generated but NOT saved to DB → frontend shows "Simulated view" banner.
+- **Portfolio upload**: PDF/CSV/XLSX/image → `POST /v1/investment/parse-portfolio` → returns `portfolio_text` + `estimated_return_pct`.
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `backend/api/investments.py` | Routes: GET /v1/investment/latest, POST /v1/investment/strategy, POST /v1/investment/parse-portfolio |
+| `backend/services/investment_service.py` | Risk score calc, debt check, goal projection math, DB persistence, orchestration |
+| `backend/services/ai_service.py` | `generate_investment_strategy_ai()` + `parse_portfolio_from_text()` |
+| `backend/schemas/investment_schema.py` | Pydantic models: GenerateStrategyRequest, InvestmentStrategyResponse, etc. |
+| `backend/db/migrations/004_investment_strategies.sql` | DDL + RLS for investment_strategies table |
+| `frontend/app/investments/page.tsx` | Full page: first-time setup, strategy view, override simulation |
+| `frontend/lib/types/investment.ts` | TypeScript types |
+| `frontend/app/api/investments/*/route.ts` | Next.js proxies for all 3 endpoints |
+
+---
+
 ## Currency System
 
 ### Overview
