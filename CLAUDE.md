@@ -32,3 +32,26 @@ For detailed guidelines, see:
 | `frontend/app/api/loans/route.ts` | Next.js proxy → GET + POST /v1/loans |
 | `frontend/app/api/loans/optimize/route.ts` | Next.js proxy → POST /v1/loans/optimize |
 | `frontend/lib/types/loan.ts` | TypeScript types for all loan/optimizer shapes |
+
+---
+
+## Currency System
+
+### Overview
+
+Currency is resolved from the user's `user_profiles` row (`currency` ISO 4217 code, or derived from `country` ISO 3166 alpha-2 via `getCurrencyCode()`). A single `CurrencyProvider` at the root layout fetches the profile once and exposes `currencyCode`, `currencySymbol`, `formatCurrency`, and `formatCompactCurrency` via `useCurrency()`.
+
+### Rules
+
+- **`CurrencyProvider` must stay in `frontend/app/layout.tsx`** (root layout). It wraps the entire app so `useCurrency()` is never called outside the context. Moving it into a page-level component (e.g. `DashboardLayout`) causes the hook to fall back to USD for any page that calls `useCurrency()` at the top of its component body.
+- All monetary display must go through `formatCurrency` / `formatCompactCurrency` from `useCurrency()`. Do not hardcode `$` or `USD`.
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `frontend/app/layout.tsx` | Mounts `CurrencyProvider` at the root |
+| `frontend/lib/hooks/useCurrency.tsx` | `CurrencyProvider` + `useCurrency()` hook |
+| `frontend/lib/utils/countryToCurrency.ts` | ISO country→currency map, `getCurrencyCode()`, `getCurrencySymbolFromCode()` |
+| `frontend/lib/utils/currencyMap.ts` | Country→symbol convenience map |
+| `frontend/app/api/profile/me/route.ts` | Next.js proxy → `GET /v1/profile/me` (used by CurrencyProvider) |
