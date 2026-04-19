@@ -10,6 +10,7 @@ interface BudgetCardProps {
   icon: LucideIcon
   color: string
   description?: string
+  hidePercentage?: boolean
   className?: string
 }
 
@@ -20,6 +21,7 @@ export function BudgetCard({
   icon: Icon,
   color,
   description,
+  hidePercentage = false,
   className,
 }: BudgetCardProps) {
   const { formatCurrency } = useCurrency()
@@ -34,12 +36,11 @@ export function BudgetCard({
           >
             <Icon className="w-5 h-5" style={{ color }} />
           </div>
-          <span
-            className="text-2xl font-bold"
-            style={{ color }}
-          >
-            {percentage}%
-          </span>
+          {!hidePercentage && (
+            <span className="text-2xl font-bold" style={{ color }}>
+              {percentage}%
+            </span>
+          )}
         </div>
         <h3 className="font-semibold mb-1">{title}</h3>
         <p className="text-2xl font-bold mb-2">{formatCurrency(amount)}</p>

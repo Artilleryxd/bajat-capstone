@@ -477,6 +477,7 @@ export default function BudgetPage() {
                     icon={card.icon}
                     color={card.color}
                     description={card.description}
+                    hidePercentage={card.title === "Emergency"}
                   />
                 ))}
               </div>

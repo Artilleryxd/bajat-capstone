@@ -187,9 +187,13 @@ export default function DashboardPage() {
   const [nw, setNw] = useState<NetWorthData | null>(null)
   const [investment, setInvestment] = useState<InvestmentData | null>(null)
   const [actualExpenses, setActualExpenses] = useState<number | null>(null)
+  const [spendingSummary, setSpendingSummary] = useState<{
+    needs: number; wants: number; investments: number; repayment: number; emergency: number
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [healthScore, setHealthScore] = useState<number | null>(null)
   const [healthLabel, setHealthLabel] = useState<string | null>(null)
+  const [healthScoreLoading, setHealthScoreLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
     const token = getToken()
@@ -200,7 +204,7 @@ export default function DashboardPage() {
     const now = new Date()
     const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
 
-    const [profRes, budRes, loansRes, assetsRes, nwRes, invRes, expRes] = await Promise.allSettled([
+    const [profRes, budRes, loansRes, assetsRes, nwRes, invRes, expRes, spendRes] = await Promise.allSettled([
       fetch(`${API_BASE_URL}/v1/profile/me`, { headers }),
       fetchWithAuth("/api/budget/latest"),
       fetchWithAuth("/api/loans"),
@@ -208,6 +212,7 @@ export default function DashboardPage() {
       fetchWithAuth("/api/assets/networth"),
       fetchWithAuth("/api/investments/latest"),
       fetchWithAuth(`/api/expenses/${monthYear}`),
+      fetchWithAuth("/api/budget/spending-summary"),
     ])
 
     let prof: ProfileData | null = null
@@ -247,17 +252,38 @@ export default function DashboardPage() {
       const total = d?.summary?.total ?? null
       if (total != null) { expTotal = total; setActualExpenses(total) }
     }
+    if (spendRes.status === "fulfilled" && spendRes.value.ok) {
+      const d = await spendRes.value.json()
+      const s = d?.summary
+      if (s) {
+        setSpendingSummary({
+          needs: Number(s.needs ?? 0),
+          wants: Number(s.wants ?? 0) + Number(s.desires ?? 0),
+          investments: Number(s.investments ?? s.investment ?? 0),
+          repayment: Number(s.repayment ?? s.repayments ?? 0),
+          emergency: Number(s.emergency ?? 0),
+        })
+      }
+    }
 
     setLoading(false)
 
     // Fetch AI health score in the background after main data is ready
+    const needsT = Object.values(bud?.needs ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+    const wantsT = Object.values(bud?.wants ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+    const investT = Object.values(bud?.investments ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+    const emergT = bud?.emergency ?? 0
+    const repayT = Object.values(bud?.repayment ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+    const budgetTotal = needsT + wantsT + investT + emergT + repayT
+
+    const hasFinancialActivity = (nwData?.total_assets ?? 0) > 0 || loanList.length > 0 || budgetTotal > 0
+
+    if (!prof?.monthly_income || !nwData || !hasFinancialActivity) {
+      setHealthScoreLoading(false)
+      return
+    }
+
     if (prof?.monthly_income && nwData) {
-      const needsT = Object.values(bud?.needs ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
-      const wantsT = Object.values(bud?.wants ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
-      const investT = Object.values(bud?.investments ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
-      const emergT = bud?.emergency ?? 0
-      const repayT = Object.values(bud?.repayment ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
-      const budgetTotal = needsT + wantsT + investT + emergT + repayT
       const expenses = expTotal ?? (budgetTotal > 0 ? budgetTotal : null)
       const totalEmi = loanList.reduce((s, l) => s + Number(l.emi_amount), 0)
 
@@ -285,6 +311,8 @@ export default function DashboardPage() {
         }
       } catch {
         // silently degrade — health score shows "—"
+      } finally {
+        setHealthScoreLoading(false)
       }
     }
   }, [])
@@ -344,7 +372,7 @@ export default function DashboardPage() {
   const getHealthColor = (s: number | null) =>
     s == null ? "#94A3B8" : s >= 80 ? "#10B981" : s >= 60 ? "#F59E0B" : s >= 40 ? "#F97316" : "#EF4444"
   const getHealthLabel = (s: number | null) =>
-    healthLabel ?? (s == null ? "No data" : s >= 80 ? "Excellent" : s >= 60 ? "Good" : s >= 40 ? "Fair" : "Needs Work")
+    healthLabel ?? (s == null ? "Add data to score" : s >= 80 ? "Excellent" : s >= 60 ? "Good" : s >= 40 ? "Fair" : "Needs Work")
 
   const sipGap = investment?.required_sip_for_goal && investment?.recommended_sip
     ? investment.required_sip_for_goal - investment.recommended_sip
@@ -386,10 +414,6 @@ export default function DashboardPage() {
             <Button variant="outline" size="sm" onClick={() => router.push("/budget")}>
               Generate Budget
             </Button>
-            <Button size="sm" className="gap-2" onClick={() => router.push("/budget/chat")}>
-              <Sparkles className="w-4 h-4" />
-              AI Assistant
-            </Button>
           </div>
         </div>
 
@@ -412,18 +436,24 @@ export default function DashboardPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-bold leading-none" style={{ color: getHealthColor(healthScore) }}>
-                      {healthScore ?? "—"}
-                    </span>
-                    {healthScore != null && (
-                      <span className="text-[9px] text-muted-foreground uppercase tracking-wide">/ 100</span>
+                    {healthScoreLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <>
+                        <span className="text-xl font-bold leading-none" style={{ color: getHealthColor(healthScore) }}>
+                          {healthScore ?? "—"}
+                        </span>
+                        {healthScore != null && (
+                          <span className="text-[9px] text-muted-foreground uppercase tracking-wide">/ 100</span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Health Score</p>
-                  <p className="text-lg font-bold" style={{ color: getHealthColor(healthScore) }}>
-                    {getHealthLabel(healthScore)}
+                  <p className="text-lg font-bold" style={{ color: healthScoreLoading ? undefined : getHealthColor(healthScore) }}>
+                    {healthScoreLoading ? <span className="text-muted-foreground text-sm">Calculating…</span> : getHealthLabel(healthScore)}
                   </p>
                 </div>
               </div>
@@ -542,11 +572,11 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { label: "Needs", budget: needsTotal, color: "#22C55E", spent: monthlyExpenses ? monthlyExpenses * 0.60 : needsTotal * 0.9 },
-                    { label: "Wants", budget: wantsTotal, color: "#3B82F6", spent: wantsTotal * 0.75 },
-                    { label: "Investments", budget: investTotal, color: "#10B981", spent: investTotal },
-                    { label: "Repayments", budget: repayTotal, color: "#EF4444", spent: totalMonthlyEmi || repayTotal },
-                    { label: "Emergency", budget: emergencyTotal, color: "#F59E0B", spent: 0 },
+                    { label: "Needs", budget: needsTotal, color: "#22C55E", spent: spendingSummary?.needs ?? 0, showPct: true },
+                    { label: "Wants", budget: wantsTotal, color: "#3B82F6", spent: spendingSummary?.wants ?? 0, showPct: true },
+                    { label: "Investments", budget: investTotal, color: "#10B981", spent: spendingSummary?.investments ?? 0, showPct: true },
+                    { label: "Repayments", budget: repayTotal, color: "#EF4444", spent: spendingSummary?.repayment ?? 0, showPct: true },
+                    { label: "Emergency", budget: emergencyTotal, color: "#F59E0B", spent: spendingSummary?.emergency ?? 0, showPct: false },
                   ].filter(r => r.budget > 0).map(row => {
                     const pct = row.budget > 0 ? Math.min((row.spent / row.budget) * 100, 100) : 0
                     const over = row.spent > row.budget
@@ -559,9 +589,11 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground">{formatCompactCurrency(row.budget)}</span>
-                            <span className={cn("font-semibold tabular-nums", over ? "text-red-500" : "text-foreground")}>
-                              {pct.toFixed(0)}%
-                            </span>
+                            {row.showPct && (
+                              <span className={cn("font-semibold tabular-nums", over ? "text-red-500" : "text-foreground")}>
+                                {pct.toFixed(0)}%
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="h-2 rounded-full bg-secondary overflow-hidden">
