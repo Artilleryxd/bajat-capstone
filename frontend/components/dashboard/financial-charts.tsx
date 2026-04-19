@@ -60,10 +60,13 @@ export function NetWorthChart() {
               <Tooltip
                 formatter={(value: number) => [formatCurrency(value), "Net Worth"]}
                 contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
+                  backgroundColor: "#0f0f18",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: "8px",
+                  color: "#f2f2f8",
                 }}
+                itemStyle={{ color: "#f2f2f8" }}
+                labelStyle={{ color: "#f2f2f8" }}
               />
               <Line
                 type="monotone"
@@ -117,10 +120,13 @@ export function IncomeExpenseChart() {
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
+                  backgroundColor: "#0f0f18",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: "8px",
+                  color: "#f2f2f8",
                 }}
+                itemStyle={{ color: "#f2f2f8" }}
+                labelStyle={{ color: "#f2f2f8" }}
               />
               <Legend />
               <Bar
@@ -179,10 +185,13 @@ export function ExpenseBreakdownChart() {
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
+                  backgroundColor: "#0f0f18",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: "8px",
+                  color: "#f2f2f8",
                 }}
+                itemStyle={{ color: "#f2f2f8" }}
+                labelStyle={{ color: "#f2f2f8" }}
               />
               <Legend
                 layout="vertical"
@@ -233,10 +242,13 @@ export function AssetLiabilityChart() {
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
+                  backgroundColor: "#0f0f18",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: "8px",
+                  color: "#f2f2f8",
                 }}
+                itemStyle={{ color: "#f2f2f8" }}
+                labelStyle={{ color: "#f2f2f8" }}
               />
               <Legend
                 layout="vertical"

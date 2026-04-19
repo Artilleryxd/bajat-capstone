@@ -90,7 +90,7 @@ function DebtWarningCard({ message }: { message: string }) {
           <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="space-y-2">
             <p className="font-semibold text-destructive">Prioritise Loan Closure First</p>
-            <p className="text-sm text-muted-foreground">{message}</p>
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>{message}</p>
             <Button
               variant="outline"
               size="sm"
@@ -252,7 +252,7 @@ export default function InvestmentsPage() {
         <div className="max-w-2xl mx-auto space-y-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Investment Strategy</h1>
-            <p className="text-muted-foreground mt-1">
+            <p style={{ color: "rgba(255,255,255,0.7)" }} className="mt-1">
               Let's build a personalised strategy based on your financial profile.
             </p>
           </div>
@@ -278,7 +278,7 @@ export default function InvestmentsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="goalAmount">Investment Goal Amount</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
                       {currencySymbol}
                     </span>
                     <Input
@@ -295,7 +295,7 @@ export default function InvestmentsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="portfolioValue">Current Portfolio Value</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
                       {currencySymbol}
                     </span>
                     <Input
@@ -331,7 +331,7 @@ export default function InvestmentsPage() {
                     value={payoutDate}
                     onChange={(e) => setPayoutDate(e.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">When do you want to reach your investment goal?</p>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>When do you want to reach your investment goal?</p>
                 </div>
               </div>
 
@@ -368,10 +368,10 @@ export default function InvestmentsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Investment Strategy</h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
               AI-generated · based on your financial profile
               {s.created_at && (
-                <span className="ml-2 text-xs">
+                <span className="ml-2 text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
                   · Last updated {new Date(s.created_at).toLocaleDateString()}
                 </span>
               )}
@@ -454,7 +454,7 @@ export default function InvestmentsPage() {
           return (
             <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
               <Info className="h-4 w-4 text-warning-foreground shrink-0 mt-0.5" />
-              <p className="text-warning-foreground">
+              <p className="text-yellow-500">
                 Your budget allocates <strong>{formatCurrency(budgetSip)}/month</strong> to investments, but you need{" "}
                 <strong>{formatCurrency(requiredSip)}/month</strong> to reach your goal on time.{" "}
                 You're <strong>{formatCurrency(gap)}/month short</strong> — see AI Insights below for suggestions.
@@ -501,7 +501,7 @@ export default function InvestmentsPage() {
                 )}
               </div>
               {isEditingProfile && (
-                <p className="text-xs text-muted-foreground pt-1">
+                <p className="text-xs pt-1" style={{ color: "rgba(255,255,255,0.6)" }}>
                   Changes are simulated only — not saved to your profile.
                 </p>
               )}
@@ -513,7 +513,7 @@ export default function InvestmentsPage() {
                   <div className="space-y-2">
                     <Label>Monthly Income Override</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
                         {currencySymbol}
                       </span>
                       <Input
@@ -569,42 +569,42 @@ export default function InvestmentsPage() {
                 /* View mode */
                 <dl className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Budget SIP</dt>
+                    <dt style={{ color: "rgba(255,255,255,0.65)" }}>Budget SIP</dt>
                     <dd className="font-semibold">{formatCurrency(s.recommended_sip ?? s.investable_surplus)}</dd>
                   </div>
                   {s.required_sip_for_goal != null && s.recommended_sip != null && s.required_sip_for_goal > s.recommended_sip && (
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Required SIP</dt>
-                      <dd className="font-semibold text-warning-foreground">{formatCurrency(s.required_sip_for_goal)}</dd>
+                      <dt style={{ color: "rgba(255,255,255,0.65)" }}>Required SIP</dt>
+                      <dd className="font-semibold text-yellow-500">{formatCurrency(s.required_sip_for_goal)}</dd>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Time Horizon</dt>
+                    <dt style={{ color: "rgba(255,255,255,0.65)" }}>Time Horizon</dt>
                     <dd className="font-semibold">
                       {TIME_HORIZON_LABELS[s.time_horizon || "medium"] || s.time_horizon || "—"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">SIP Date</dt>
+                    <dt style={{ color: "rgba(255,255,255,0.65)" }}>SIP Date</dt>
                     <dd className="font-semibold">
                       {s.sip_date ? `${s.sip_date}${s.sip_date === 1 ? "st" : s.sip_date === 2 ? "nd" : s.sip_date === 3 ? "rd" : "th"} of month` : "—"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Goal Target Date</dt>
+                    <dt style={{ color: "rgba(255,255,255,0.65)" }}>Goal Target Date</dt>
                     <dd className="font-semibold">
                       {s.payout_date ? new Date(s.payout_date).toLocaleDateString("en-IN", { year: "numeric", month: "short" }) : "—"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Expected Return</dt>
+                    <dt style={{ color: "rgba(255,255,255,0.65)" }}>Expected Return</dt>
                     <dd className="font-semibold">
                       {s.estimated_annual_return ? `~${s.estimated_annual_return}% p.a.` : "—"}
                     </dd>
                   </div>
                   {s.is_debt_heavy && (
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Debt Burden</dt>
+                      <dt style={{ color: "rgba(255,255,255,0.65)" }}>Debt Burden</dt>
                       <dd className="font-semibold text-destructive">High — pay loans first</dd>
                     </div>
                   )}
@@ -654,7 +654,7 @@ export default function InvestmentsPage() {
                   { label: "20-Year Value", value: s.goal_projection.projected_value_20yr },
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-lg bg-secondary p-4">
-                    <p className="text-xs text-muted-foreground mb-1">{label}</p>
+                    <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.65)" }}>{label}</p>
                     <p className="text-xl font-bold">{formatCurrency(value)}</p>
                   </div>
                 ))}
@@ -687,7 +687,7 @@ export default function InvestmentsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground leading-relaxed space-y-3">
+              <div className="text-sm leading-relaxed space-y-3" style={{ color: "rgba(255,255,255,0.75)" }}>
                 {s.ai_insights
                   .split(/\n\n+/)
                   .filter(Boolean)
@@ -695,7 +695,7 @@ export default function InvestmentsPage() {
                     <p key={i}>{paragraph.trim()}</p>
                   ))}
               </div>
-              <p className="mt-4 text-xs text-muted-foreground border-t pt-3">
+              <p className="mt-4 text-xs border-t pt-3" style={{ color: "rgba(255,255,255,0.5)" }}>
                 This is for educational purposes only and does not constitute financial advice.
                 Consult a SEBI-registered financial advisor before making investment decisions.
               </p>

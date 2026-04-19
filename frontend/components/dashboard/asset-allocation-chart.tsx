@@ -42,9 +42,11 @@ export function AssetAllocationChart({
                 outerRadius={100}
                 paddingAngle={2}
                 dataKey="value"
+                stroke="none"
+                strokeWidth={0}
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Cell key={`cell-${index}`} fill={entry.color} stroke="none" strokeWidth={0} />
                 ))}
               </Pie>
               <Tooltip
@@ -53,10 +55,13 @@ export function AssetAllocationChart({
                   "",
                 ]}
                 contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
+                  backgroundColor: "#0f0f18",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: "8px",
+                  color: "#f2f2f8",
                 }}
+                itemStyle={{ color: "#f2f2f8" }}
+                labelStyle={{ color: "#f2f2f8" }}
               />
               <Legend
                 layout="horizontal"

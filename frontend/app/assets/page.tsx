@@ -289,7 +289,7 @@ export default function AssetsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Assets &amp; Liabilities</h1>
-            <p className="text-muted-foreground">Track your net worth with AI-powered valuations</p>
+            <p style={{ color: "rgba(255,255,255,0.7)" }}>Track your net worth with AI-powered valuations</p>
           </div>
           <Button onClick={() => { setModalOpen(true); setAddStep("choose") }}>
             <Plus className="w-4 h-4 mr-2" />
@@ -376,7 +376,7 @@ export default function AssetsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{asset.name}</p>
-                            <p className="text-xs text-muted-foreground">{cfg.label}</p>
+                            <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>{cfg.label}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold">{formatCurrency(cv)}</p>
@@ -421,14 +421,14 @@ export default function AssetsPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium truncate">{l.loan_type}</p>
-                          {l.lender && <p className="text-xs text-muted-foreground">{l.lender}</p>}
+                          {l.lender && <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>{l.lender}</p>}
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-semibold text-destructive">{formatCurrency(l.principal_outstanding)}</p>
-                          <p className="text-xs text-muted-foreground">EMI {formatCurrency(l.emi_amount)}</p>
+                          <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>EMI {formatCurrency(l.emi_amount)}</p>
                         </div>
                       </div>
-                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="mt-2 flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
                         <span>{l.emis_remaining} EMIs left</span>
                         <span>·</span>
                         <span>{l.interest_rate}% p.a.</span>
@@ -450,16 +450,16 @@ export default function AssetsPage() {
                   <Scale className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Your Net Worth</p>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>Your Net Worth</p>
                   <p className="text-3xl font-bold text-primary">{formatCurrency(netWorthVal)}</p>
                 </div>
               </div>
               {netWorth?.approx_net_worth && (
                 <div className="text-center sm:text-right">
-                  <p className="text-sm text-muted-foreground">AI Estimate</p>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>AI Estimate</p>
                   <p className="text-xl font-bold">{formatCurrency(netWorth.approx_net_worth)}</p>
                   {netWorth.approx_confidence && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                       {Math.round(netWorth.approx_confidence * 100)}% confidence
                     </p>
                   )}
@@ -640,7 +640,7 @@ export default function AssetsPage() {
               {drillLoading ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-20">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">AI is analysing your asset…</p>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>AI is analysing your asset…</p>
                 </div>
               ) : drilldown ? (
                 <div className="space-y-5">
@@ -648,7 +648,7 @@ export default function AssetsPage() {
                   {/* Price summary 2×2 */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg bg-secondary p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Current Value</p>
+                      <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.65)" }}>Current Value</p>
                       <p className="text-lg font-bold">{formatCurrency(drilldown.current_value)}</p>
                       {drilldown.ai_projection && (
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -657,7 +657,7 @@ export default function AssetsPage() {
                       )}
                     </div>
                     <div className="rounded-lg bg-secondary p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Purchase Price</p>
+                      <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.65)" }}>Purchase Price</p>
                       <p className="text-lg font-bold">{formatCurrency(drilldown.purchase_price)}</p>
                       {selectedAsset.purchase_date && (
                         <p className="text-[10px] text-muted-foreground mt-0.5">{selectedAsset.purchase_date}</p>
@@ -671,7 +671,7 @@ export default function AssetsPage() {
                     const isUp = gain >= 0
                     return (
                       <div className={cn("rounded-lg border p-3", isUp ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5")}>
-                        <p className="text-xs text-muted-foreground mb-1">Total Gain / Loss</p>
+                        <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.65)" }}>Total Gain / Loss</p>
                         <div className="flex items-center justify-between">
                           <span className={cn("text-xl font-bold", isUp ? "text-success" : "text-destructive")}>
                             {isUp ? "+" : "−"}{formatCurrency(Math.abs(gain))}
@@ -682,7 +682,7 @@ export default function AssetsPage() {
                             {isUp ? "+" : ""}{drilldown.appreciation_pct.toFixed(1)}%
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.6)" }}>
                           {(drilldown.appreciation_rate * 100).toFixed(1)}% annual rate
                         </p>
                       </div>
@@ -710,20 +710,23 @@ export default function AssetsPage() {
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                          <XAxis dataKey="year" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.65)" }} />
                           <YAxis
                             tickFormatter={v => formatCurrency(v).replace(/\.00$/, "")}
-                            tick={{ fontSize: 10 }}
+                            tick={{ fontSize: 10, fill: "rgba(255,255,255,0.65)" }}
                             width={70}
                           />
                           <RechartsTooltip
                             formatter={(v: number) => [formatCurrency(v), "Est. Value"]}
                             contentStyle={{
-                              backgroundColor: "hsl(var(--card))",
-                              border: "1px solid hsl(var(--border))",
+                              backgroundColor: "#0f0f18",
+                              border: "1px solid rgba(255,255,255,0.12)",
                               borderRadius: "8px",
                               fontSize: 12,
+                              color: "#f2f2f8",
                             }}
+                            itemStyle={{ color: "#f2f2f8" }}
+                            labelStyle={{ color: "#f2f2f8" }}
                           />
                           <Area
                             type="monotone"
@@ -741,7 +744,7 @@ export default function AssetsPage() {
                     <div className="mt-3 divide-y divide-border rounded-lg border overflow-hidden">
                       {projectionChartData.slice(1).map(({ year, value }) => (
                         <div key={year} className="flex items-center justify-between px-3 py-2 text-sm">
-                          <span className="text-muted-foreground">{year}</span>
+                          <span style={{ color: "rgba(255,255,255,0.65)" }}>{year}</span>
                           <span className="font-medium">{formatCurrency(value)}</span>
                         </div>
                       ))}

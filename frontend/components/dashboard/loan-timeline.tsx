@@ -50,10 +50,13 @@ export function LoanTimeline({ data, className }: LoanTimelineProps) {
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
+                  backgroundColor: "#0f0f18",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: "8px",
+                  color: "#f2f2f8",
                 }}
+                itemStyle={{ color: "#f2f2f8" }}
+                labelStyle={{ color: "#f2f2f8" }}
               />
               <Area
                 type="monotone"

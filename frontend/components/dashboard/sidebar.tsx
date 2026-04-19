@@ -88,7 +88,15 @@ export function Sidebar() {
       {/* Header — logo + avatar */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-sidebar-border">
         {!collapsed && (
-          <span className="font-semibold text-lg tracking-tight truncate">FinsightAI</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                 style={{ background: "linear-gradient(135deg, #E8357A, #7B5EA7)" }}>
+              <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4">
+                <path d="M2 12 L5.5 7.5 L8.5 9.5 L13 3" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="font-display font-extrabold text-base tracking-tight truncate text-foreground">FinSight AI</span>
+          </div>
         )}
 
         {/* Avatar with dropdown — always visible */}
@@ -104,7 +112,8 @@ export function Sidebar() {
             >
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                <AvatarFallback className="text-xs font-semibold text-white"
+                  style={{ background: "linear-gradient(135deg, #E8357A, #7B5EA7)" }}>
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -146,13 +155,19 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-primary"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      ? "text-white"
+                      : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   )}
+                  style={isActive ? {
+                    background: "rgba(232,53,122,0.1)",
+                    borderLeft: "3px solid #E8357A",
+                    paddingLeft: 9,
+                    boxShadow: "inset 0 0 20px rgba(232,53,122,0.05)",
+                  } : { borderLeft: "3px solid transparent", paddingLeft: 9 }}
                 >
-                  <item.icon className="w-5 h-5 shrink-0" />
+                  <item.icon className="w-5 h-5 shrink-0" style={isActive ? { color: "#E8357A" } : {}} />
                   {!collapsed && <span>{item.label}</span>}
                 </Link>
               </li>

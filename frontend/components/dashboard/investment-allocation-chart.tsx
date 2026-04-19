@@ -42,18 +42,23 @@ export function InvestmentAllocationChart({
                   outerRadius={90}
                   paddingAngle={2}
                   dataKey="percentage"
+                  stroke="none"
+                  strokeWidth={0}
                 >
                   {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" strokeWidth={0} />
                   ))}
                 </Pie>
                 <Tooltip
                   formatter={(value: number) => `${value}%`}
                   contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
+                    backgroundColor: "#0f0f18",
+                    border: "1px solid rgba(255,255,255,0.12)",
                     borderRadius: "8px",
+                    color: "#f2f2f8",
                   }}
+                  itemStyle={{ color: "#f2f2f8" }}
+                  labelStyle={{ color: "#f2f2f8" }}
                 />
               </PieChart>
             </ResponsiveContainer>

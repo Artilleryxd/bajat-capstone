@@ -105,8 +105,8 @@ const ASSET_ICONS: Record<string, React.ElementType> = {
 }
 
 const ASSET_COLORS: Record<string, string> = {
-  real_estate: "#22C55E", vehicle: "#3B82F6", gold: "#F59E0B",
-  equity: "#10B981", fd: "#8B5CF6", gadget: "#64748B", other: "#94A3B8",
+  real_estate: "#E8357A", vehicle: "#7B5EA7", gold: "#C084FC",
+  equity: "#6366F1", fd: "#8B5CF6", gadget: "#A855F7", other: "#64748B",
 }
 
 const LOAN_LABELS: Record<string, string> = {
@@ -133,7 +133,7 @@ function TrendBadge({ change, invert = false }: { change?: number | null; invert
   return (
     <span className={cn(
       "inline-flex items-center gap-0.5 text-xs font-medium",
-      isFlat ? "text-muted-foreground" : isGood ? "text-emerald-600" : "text-red-500"
+      isFlat ? "text-muted-foreground" : isGood ? "text-primary" : "text-red-500"
     )}>
       {isFlat ? <span>→</span> : isGood
         ? <TrendingUp className="w-3 h-3" />
@@ -155,8 +155,8 @@ function StatCard({
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
-            <p className="text-2xl font-bold tracking-tight truncate">{value}</p>
+            <p className="text-[11px] font-medium uppercase" style={{ letterSpacing: "0.12em", color: "rgba(255,255,255,0.65)", fontFamily: "var(--font-sans)" }}>{title}</p>
+            <p className="text-2xl tracking-tight truncate" style={{ fontFamily: "var(--font-display)", fontWeight: 800 }}>{value}</p>
             <TrendBadge change={change} invert={invertTrend} />
           </div>
           {Icon && (
@@ -171,7 +171,12 @@ function StatCard({
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3">{children}</h2>
+  return (
+    <h2 className="text-[11px] font-medium mb-4"
+        style={{ textTransform: "uppercase", letterSpacing: "0.15em", color: "rgba(255,255,255,0.75)", fontFamily: "var(--font-sans)" }}>
+      {children}
+    </h2>
+  )
 }
 
 function PieTooltip({
@@ -378,11 +383,11 @@ export default function DashboardPage() {
   const netWorthVal = nw?.net_worth ?? null
 
   const budgetPieData = budgetGrandTotal > 0 ? [
-    { name: "Needs", value: needsTotal, color: "#22C55E" },
-    { name: "Wants", value: wantsTotal, color: "#3B82F6" },
-    { name: "Investments", value: investTotal, color: "#10B981" },
-    { name: "Repayments", value: repayTotal, color: "#EF4444" },
-    { name: "Emergency", value: emergencyTotal, color: "#F59E0B" },
+    { name: "Needs", value: needsTotal, color: "#E8357A" },
+    { name: "Wants", value: wantsTotal, color: "#7B5EA7" },
+    { name: "Investments", value: investTotal, color: "#6366F1" },
+    { name: "Repayments", value: repayTotal, color: "#A855F7" },
+    { name: "Emergency", value: emergencyTotal, color: "#8B5CF6" },
   ].filter(d => d.value > 0) : []
 
   const assetAllocationData = (() => {
@@ -404,7 +409,7 @@ export default function DashboardPage() {
     .slice(0, 4)
 
   const getHealthColor = (s: number | null) =>
-    s == null ? "#94A3B8" : s >= 80 ? "#10B981" : s >= 60 ? "#F59E0B" : s >= 40 ? "#F97316" : "#EF4444"
+    s == null ? "#64748B" : s >= 80 ? "#E8357A" : s >= 60 ? "#7B5EA7" : s >= 40 ? "#F59E0B" : "#EF4444"
   const getHealthLabel = (s: number | null) =>
     healthLabel ?? (s == null ? "Add data to score" : s >= 80 ? "Excellent" : s >= 60 ? "Good" : s >= 40 ? "Fair" : "Needs Work")
 
@@ -440,14 +445,25 @@ export default function DashboardPage() {
               {greeting},{" "}
               <span className="text-primary">{userName}</span>
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
               Here&apos;s your financial snapshot for April 2026
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push("/budget")}>
+            <button
+              onClick={() => router.push("/budget")}
+              className="cursor-pointer px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-[.97]"
+              style={{
+                background: "linear-gradient(135deg, #E8357A 0%, #7B5EA7 100%)",
+                boxShadow: "0 0 20px rgba(232,53,122,0.3)",
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 32px rgba(232,53,122,0.5)")}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 20px rgba(232,53,122,0.3)")}
+            >
               Generate Budget
-            </Button>
+            </button>
           </div>
         </div>
 
@@ -478,14 +494,14 @@ export default function DashboardPage() {
                           {healthScore ?? "—"}
                         </span>
                         {healthScore != null && (
-                          <span className="text-[9px] text-muted-foreground uppercase tracking-wide">/ 100</span>
+                          <span className="text-[9px] uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>/ 100</span>
                         )}
                       </>
                     )}
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Health Score</p>
+                  <p className="text-xs uppercase tracking-wide font-medium" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "0.12em" }}>Health Score</p>
                   <p className="text-lg font-bold" style={{ color: healthScoreLoading ? undefined : getHealthColor(healthScore) }}>
                     {healthScoreLoading ? <span className="text-muted-foreground text-sm">Calculating…</span> : getHealthLabel(healthScore)}
                   </p>
@@ -497,13 +513,13 @@ export default function DashboardPage() {
               {/* 4 mini stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
                 {[
-                  { label: "Net Worth", value: safeFmt(netWorthVal, formatCompactCurrency), color: "text-primary" },
-                  { label: "Monthly Income", value: safeFmt(monthlyIncome, formatCompactCurrency), color: "text-emerald-600" },
-                  { label: "Monthly Expenses", value: safeFmt(monthlyExpenses, formatCompactCurrency), color: "text-blue-600" },
+                  { label: "Net Worth", value: safeFmt(netWorthVal, formatCompactCurrency), color: "#E8357A" },
+                  { label: "Monthly Income", value: safeFmt(monthlyIncome, formatCompactCurrency), color: "#7B5EA7" },
+                  { label: "Monthly Expenses", value: safeFmt(monthlyExpenses, formatCompactCurrency), color: "#6366F1" },
                 ].map(item => (
                   <div key={item.label} className="space-y-0.5">
-                    <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{item.label}</p>
-                    <p className={cn("text-lg font-bold", item.color)}>{item.value}</p>
+                    <p className="text-[11px] uppercase" style={{ letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontFamily: "var(--font-sans)" }}>{item.label}</p>
+                    <p className="text-lg" style={{ fontFamily: "var(--font-display)", fontWeight: 800, color: item.color }}>{item.value}</p>
                   </div>
                 ))}
               </div>
@@ -529,14 +545,17 @@ export default function DashboardPage() {
           <SectionTitle>Key Metrics</SectionTitle>
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <StatCard title="Net Worth" value={safeFmt(netWorthVal, formatCompactCurrency)}
-              icon={Scale} iconClass="bg-primary/10 text-primary" />
+              icon={Scale} iconClass="bg-primary/10 text-primary"
+              className="[box-shadow:0_0_0_1px_rgba(232,53,122,0.2),0_4px_24px_rgba(0,0,0,0.4)]" />
             <StatCard title="Monthly Income" value={safeFmt(monthlyIncome, formatCompactCurrency)}
-              icon={TrendingUp} iconClass="bg-emerald-500/10 text-emerald-600" />
+              icon={TrendingUp} iconClass="bg-[#7B5EA7]/15 text-[#C084FC]"
+              className="[box-shadow:0_0_0_1px_rgba(123,94,167,0.2),0_4px_24px_rgba(0,0,0,0.4)]" />
             <StatCard title="Monthly Expenses" value={safeFmt(monthlyExpenses, formatCompactCurrency)}
-              icon={Receipt} iconClass="bg-blue-500/10 text-blue-600" />
+              icon={Receipt} iconClass="bg-[#6366F1]/15 text-[#818CF8]"
+              className="[box-shadow:0_0_0_1px_rgba(99,102,241,0.2),0_4px_24px_rgba(0,0,0,0.4)]" />
             <StatCard title="Loans Outstanding" value={safeFmt(totalLoansOutstanding, formatCompactCurrency)}
-              icon={Landmark} iconClass="bg-red-500/10 text-red-600"
-              className="col-span-2 lg:col-span-1" />
+              icon={Landmark} iconClass="bg-red-500/10 text-red-400"
+              className="col-span-2 lg:col-span-1 [box-shadow:0_0_0_1px_rgba(239,68,68,0.15),0_4px_24px_rgba(0,0,0,0.4)]" />
           </div>
         </div>
 
@@ -563,9 +582,9 @@ export default function DashboardPage() {
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie data={budgetPieData} cx="50%" cy="50%" innerRadius={52} outerRadius={78}
-                            paddingAngle={2} dataKey="value" startAngle={90} endAngle={-270}>
+                            paddingAngle={2} dataKey="value" startAngle={90} endAngle={-270} stroke="none" strokeWidth={0}>
                             {budgetPieData.map((entry, i) => (
-                              <Cell key={i} fill={entry.color} />
+                              <Cell key={i} fill={entry.color} stroke="none" strokeWidth={0} />
                             ))}
                           </Pie>
                           <RechartsTooltip
@@ -575,18 +594,18 @@ export default function DashboardPage() {
                       </ResponsiveContainer>
                     </div>
                     <div className="flex-1 space-y-2 min-w-0">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Monthly Budget</p>
+                      <p className="text-xs uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "0.12em" }}>Monthly Budget</p>
                       <p className="text-xl font-bold text-primary">{formatCompactCurrency(budgetGrandTotal)}</p>
                       <div className="space-y-1.5 mt-2">
                         {budgetPieData.map(item => (
                           <div key={item.name} className="flex items-center justify-between text-sm gap-2">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
-                              <span className="text-muted-foreground truncate text-xs">{item.name}</span>
+                              <span className="truncate text-xs" style={{ color: "rgba(255,255,255,0.75)" }}>{item.name}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-xs font-medium">{formatCompactCurrency(item.value)}</span>
-                              <span className="text-[10px] text-muted-foreground w-8 text-right">
+                              <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{formatCompactCurrency(item.value)}</span>
+                              <span className="text-[10px] w-8 text-right font-semibold" style={{ color: "#ffffff" }}>
                                 {((item.value / budgetGrandTotal) * 100).toFixed(0)}%
                               </span>
                             </div>
@@ -605,11 +624,11 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { label: "Needs", budget: needsTotal, color: "#22C55E", spent: spendingSummary?.needs ?? 0, showPct: true },
-                    { label: "Wants", budget: wantsTotal, color: "#3B82F6", spent: spendingSummary?.wants ?? 0, showPct: true },
-                    { label: "Investments", budget: investTotal, color: "#10B981", spent: spendingSummary?.investments ?? 0, showPct: true },
-                      { label: "Repayments", budget: repayTotal, color: "#EF4444", spent: actualRepaymentSpent ?? 0, showPct: true },
-                    { label: "Emergency", budget: emergencyTotal, color: "#F59E0B", spent: spendingSummary?.emergency ?? 0, showPct: false },
+                    { label: "Needs", budget: needsTotal, color: "#E8357A", spent: spendingSummary?.needs ?? 0, showPct: true },
+                    { label: "Wants", budget: wantsTotal, color: "#7B5EA7", spent: spendingSummary?.wants ?? 0, showPct: true },
+                    { label: "Investments", budget: investTotal, color: "#6366F1", spent: spendingSummary?.investments ?? 0, showPct: true },
+                    { label: "Repayments", budget: repayTotal, color: "#A855F7", spent: actualRepaymentSpent ?? 0, showPct: true },
+                    { label: "Emergency", budget: emergencyTotal, color: "#8B5CF6", spent: spendingSummary?.emergency ?? 0, showPct: false },
                   ].filter(r => r.budget > 0).map(row => {
                     const pct = row.budget > 0 ? Math.min((row.spent / row.budget) * 100, 100) : 0
                     const over = row.spent > row.budget
@@ -621,9 +640,9 @@ export default function DashboardPage() {
                             <span className="font-medium">{row.label}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground">{formatCompactCurrency(row.budget)}</span>
+                            <span style={{ color: "rgba(255,255,255,0.65)" }}>{formatCompactCurrency(row.budget)}</span>
                             {row.showPct && (
-                              <span className={cn("font-semibold tabular-nums", over ? "text-red-500" : "text-foreground")}>
+                              <span className="tabular-nums font-semibold" style={{ color: over ? "#F87171" : "#ffffff" }}>
                                 {pct.toFixed(0)}%
                               </span>
                             )}
@@ -659,9 +678,9 @@ export default function DashboardPage() {
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie data={assetAllocationData} cx="50%" cy="50%" innerRadius={44} outerRadius={68}
-                            paddingAngle={2} dataKey="value">
+                            paddingAngle={2} dataKey="value" stroke="none" strokeWidth={0}>
                             {assetAllocationData.map((entry, i) => (
-                              <Cell key={i} fill={entry.color} />
+                              <Cell key={i} fill={entry.color} stroke="none" strokeWidth={0} />
                             ))}
                           </Pie>
                           <RechartsTooltip
@@ -674,13 +693,13 @@ export default function DashboardPage() {
                       {assetAllocationData.map(item => (
                         <div key={item.name} className="flex items-center gap-1.5 text-xs">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
-                          <span className="text-muted-foreground truncate">{item.name}</span>
+                          <span className="truncate" style={{ color: "rgba(255,255,255,0.75)" }}>{item.name}</span>
                         </div>
                       ))}
                     </div>
                     {nw && (
                       <div className="mt-3 pt-3 border-t flex justify-between text-xs">
-                        <span className="text-muted-foreground">Total Assets</span>
+                        <span style={{ color: "rgba(255,255,255,0.65)" }}>Total Assets</span>
                         <span className="font-bold text-primary">{formatCompactCurrency(nw.total_assets)}</span>
                       </div>
                     )}
@@ -720,11 +739,11 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{asset.name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{asset.asset_type.replace("_", " ")}</p>
+                            <p className="text-xs capitalize" style={{ color: "rgba(255,255,255,0.65)" }}>{asset.asset_type.replace("_", " ")}</p>
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-sm font-semibold">{formatCompactCurrency(cv)}</p>
-                            <p className={cn("text-xs flex items-center justify-end gap-0.5", isUp ? "text-emerald-600" : "text-red-500")}>
+                            <p className={cn("text-xs flex items-center justify-end gap-0.5", isUp ? "text-primary" : "text-red-400")}>
                               {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                               {isUp ? "+" : ""}{gainPct.toFixed(1)}%
                             </p>
@@ -761,14 +780,14 @@ export default function DashboardPage() {
                             <p className="text-sm font-medium truncate">
                               {LOAN_LABELS[loan.loan_type] ?? loan.loan_type}
                             </p>
-                            {loan.lender && <p className="text-xs text-muted-foreground">{loan.lender}</p>}
+                            {loan.lender && <p className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>{loan.lender}</p>}
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-sm font-semibold text-red-500">{formatCompactCurrency(loan.principal_outstanding)}</p>
-                            <p className="text-[11px] text-muted-foreground">EMI {formatCompactCurrency(loan.emi_amount)}</p>
+                            <p className="text-sm font-semibold text-red-400">{formatCompactCurrency(loan.principal_outstanding)}</p>
+                            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.65)" }}>EMI {formatCompactCurrency(loan.emi_amount)}</p>
                           </div>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">{loan.emis_remaining} EMIs · {loan.interest_rate}% p.a.</p>
+                        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.6)" }}>{loan.emis_remaining} EMIs · {loan.interest_rate}% p.a.</p>
                       </div>
                     ))}
                     <div className="mt-1 pt-3 border-t rounded-lg bg-primary/5 border border-primary/20 p-3">
@@ -776,7 +795,7 @@ export default function DashboardPage() {
                         <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
                         <p className="text-xs text-foreground font-medium">Optimization available</p>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 ml-5">Switch to avalanche strategy to save on interest</p>
+                      <p className="text-[11px] mt-0.5 ml-5" style={{ color: "rgba(255,255,255,0.65)" }}>Switch to avalanche strategy to save on interest</p>
                       <Link href="/loans" className="text-[11px] text-primary flex items-center gap-0.5 mt-1.5 ml-5 hover:underline underline-offset-2">
                         View optimization <ArrowRight className="w-3 h-3" />
                       </Link>
@@ -803,7 +822,7 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-base">Investment Strategy</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">AI-generated based on your profile</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>AI-generated based on your profile</p>
                   </div>
                   <Link href="/investments">
                     <Button variant="ghost" size="sm" className="text-xs h-7 px-2 gap-1">
@@ -825,7 +844,7 @@ export default function DashboardPage() {
                         {investment.risk_profile}
                       </Badge>
                       <div className="flex-1">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: "rgba(255,255,255,0.65)" }}>
                           <span>Risk Score</span><span>{investment.risk_score}/100</span>
                         </div>
                         <Progress value={investment.risk_score} className="h-1.5" />
@@ -837,11 +856,11 @@ export default function DashboardPage() {
                       {(investment.allocations ?? []).slice(0, 5).map(alloc => (
                         <div key={alloc.name} className="space-y-0.5">
                           <div className="flex justify-between text-xs">
-                            <span className="font-medium">{alloc.name}</span>
-                            <span className="text-muted-foreground">{alloc.percentage}%</span>
+                            <span className="font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{alloc.name}</span>
+                            <span className="font-semibold" style={{ color: "#ffffff" }}>{alloc.percentage}%</span>
                           </div>
                           <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${alloc.percentage}%`, background: alloc.color ?? "#10B981" }} />
+                            <div className="h-full rounded-full" style={{ width: `${alloc.percentage}%`, background: alloc.color ?? "#E8357A" }} />
                           </div>
                         </div>
                       ))}
@@ -863,20 +882,20 @@ export default function DashboardPage() {
                               { label: "20 yr", val: investment.goal_projection.projected_value_20yr },
                             ].map(p => (
                               <div key={p.label} className="rounded bg-background/60 p-2">
-                                <p className="text-[10px] text-muted-foreground">{p.label}</p>
+                                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.6)" }}>{p.label}</p>
                                 <p className="text-xs font-bold text-primary">{p.val ? formatCompactCurrency(p.val) : "—"}</p>
                               </div>
                             ))}
                           </div>
                         )}
                         {sipGap != null && sipGap > 0 && (
-                          <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                          <p className="text-[11px] text-amber-400 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
                             {formatCompactCurrency(sipGap)}/mo short of your goal
                           </p>
                         )}
                         {sipGap != null && sipGap <= 0 && (
-                          <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                          <p className="text-[11px] flex items-center gap-1" style={{ color: "#E8357A" }}>
                             <CheckCircle2 className="w-3 h-3" />
                             On track to reach your goal
                           </p>
@@ -886,7 +905,7 @@ export default function DashboardPage() {
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-32 gap-3 text-center">
-                    <p className="text-sm text-muted-foreground">No investment strategy yet.</p>
+                    <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>No investment strategy yet.</p>
                     <Button size="sm" variant="outline" onClick={() => router.push("/investments")}>
                       Set Up Strategy
                     </Button>
@@ -901,7 +920,7 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-base">Net Worth Summary</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">Assets minus liabilities</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>Assets minus liabilities</p>
                   </div>
                   <Link href="/assets">
                     <Button variant="ghost" size="sm" className="text-xs h-7 px-2 gap-1">
@@ -914,32 +933,32 @@ export default function DashboardPage() {
                 {nw ? (
                   <>
                     <div className="text-center py-2">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Net Worth</p>
-                      <p className="text-4xl font-bold text-primary">{formatCompactCurrency(nw.net_worth)}</p>
+                      <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "0.12em" }}>Total Net Worth</p>
+                      <p className="text-4xl text-primary" style={{ fontFamily: "var(--font-display)", fontWeight: 800 }}>{formatCompactCurrency(nw.net_worth)}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 text-center">
-                        <p className="text-[11px] text-emerald-600 font-medium uppercase tracking-wide">Total Assets</p>
-                        <p className="text-xl font-bold text-emerald-700">{formatCompactCurrency(nw.total_assets)}</p>
+                      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(232,53,122,0.08)", border: "1px solid rgba(232,53,122,0.2)" }}>
+                        <p className="text-[11px] font-medium uppercase" style={{ letterSpacing: "0.1em", color: "#E8357A" }}>Total Assets</p>
+                        <p className="text-xl" style={{ fontFamily: "var(--font-display)", fontWeight: 800, color: "#E8357A" }}>{formatCompactCurrency(nw.total_assets)}</p>
                       </div>
-                      <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3 text-center">
-                        <p className="text-[11px] text-red-600 font-medium uppercase tracking-wide">Total Liabilities</p>
-                        <p className="text-xl font-bold text-red-700">{formatCompactCurrency(nw.total_liabilities)}</p>
+                      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                        <p className="text-[11px] font-medium uppercase" style={{ letterSpacing: "0.1em", color: "#F87171" }}>Total Liabilities</p>
+                        <p className="text-xl" style={{ fontFamily: "var(--font-display)", fontWeight: 800, color: "#F87171" }}>{formatCompactCurrency(nw.total_liabilities)}</p>
                       </div>
                     </div>
                     {nw.debt_ratio != null && (
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Debt Ratio</span>
-                          <span className={cn("font-semibold", nw.debt_ratio > 50 ? "text-red-500" : nw.debt_ratio > 30 ? "text-amber-600" : "text-emerald-600")}>
+                          <span style={{ color: "rgba(255,255,255,0.65)" }}>Debt Ratio</span>
+                          <span className="font-semibold" style={{ color: nw.debt_ratio > 50 ? "#EF4444" : nw.debt_ratio > 30 ? "#F59E0B" : "#E8357A" }}>
                             {nw.debt_ratio.toFixed(1)}%
                           </span>
                         </div>
                         <div className="h-2 rounded-full bg-secondary overflow-hidden">
                           <div className="h-full rounded-full transition-all duration-700"
-                            style={{ width: `${Math.min(nw.debt_ratio, 100)}%`, background: nw.debt_ratio > 50 ? "#EF4444" : nw.debt_ratio > 30 ? "#F59E0B" : "#10B981" }} />
+                            style={{ width: `${Math.min(nw.debt_ratio, 100)}%`, background: nw.debt_ratio > 50 ? "#EF4444" : nw.debt_ratio > 30 ? "#F59E0B" : "#E8357A" }} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.65)" }}>
                           {nw.debt_ratio < 30 ? "Healthy debt ratio — you're in great shape" : nw.debt_ratio < 50 ? "Moderate debt — keep reducing liabilities" : "High debt ratio — focus on repayments"}
                         </p>
                       </div>
@@ -966,7 +985,7 @@ export default function DashboardPage() {
               {budget.insights.slice(0, 3).map((msg, i) => (
                 <div key={i} className="rounded-lg border border-l-4 border-l-primary bg-primary/5 p-4 flex gap-3">
                   <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
-                  <p className="text-sm text-foreground/80 leading-snug">{msg}</p>
+                  <p className="text-sm leading-snug" style={{ color: "rgba(255,255,255,0.75)" }}>{msg}</p>
                 </div>
               ))}
             </div>

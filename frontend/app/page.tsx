@@ -8,10 +8,10 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,100..900&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Plus+Jakarta+Sans:wght@700;800&display=swap');
 
-        .lp-serif { font-family: 'Fraunces', Georgia, serif; }
-        .lp-mono  { font-family: 'JetBrains Mono', monospace; }
+        .lp-serif { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-weight: 800; }
+        .lp-mono  { font-family: 'Inter', system-ui, sans-serif; }
 
         @keyframes lp-up   { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
         @keyframes lp-bar  { from { transform:scaleX(0); } to { transform:scaleX(1); } }
@@ -66,13 +66,13 @@ export default function LandingPage() {
           {/* ── Nav ── */}
           <header className="lp-in lp-d1 flex items-center justify-between px-6 sm:px-10 py-5 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                   style={{ background: "linear-gradient(135deg, #E8357A, #7B5EA7)" }}>
                 <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4">
                   <path d="M2 12 L5.5 7.5 L8.5 9.5 L13 3" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span className="lp-serif text-sm font-bold tracking-tight text-white"
-                    style={{ fontVariationSettings: '"opsz" 14, "wght" 700' }}>
+              <span className="lp-serif text-sm font-bold tracking-tight text-white">
                 FinSight AI
               </span>
             </div>
@@ -95,15 +95,15 @@ export default function LandingPage() {
 
               <div className="lp-in lp-d2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
                    style={{ border: "1px solid rgba(255,255,255,.08)", background: "rgba(255,255,255,.04)" }}>
-                <span className="lp-blink w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                <span className="lp-mono text-emerald-400 uppercase tracking-[.12em]" style={{ fontSize: 10 }}>
+                <span className="lp-blink w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#E8357A" }} />
+                <span className="lp-mono uppercase tracking-[.12em]" style={{ fontSize: 10, color: "#E8357A" }}>
                   AI-Powered Finance
                 </span>
               </div>
 
               <div className="lp-in lp-d3">
                 <h1 className="lp-serif leading-[1.0] tracking-tight text-white"
-                    style={{ fontSize: "clamp(2.6rem,4.5vw,4.2rem)", fontVariationSettings: '"opsz" 72, "wght" 700' }}>
+                    style={{ fontSize: "clamp(2.6rem,4.5vw,4.2rem)", fontWeight: 800, letterSpacing: "-0.02em" }}>
                   Your money,
                   <br />
                   <span style={{
@@ -123,10 +123,10 @@ export default function LandingPage() {
               <div className="lp-in lp-d4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={() => router.push("/signup")}
-                  className="cursor-pointer px-7 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-semibold transition-all active:scale-[.97]"
-                  style={{ transitionProperty: "background, box-shadow, transform" }}
-                  onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 32px rgba(16,185,129,.45)")}
-                  onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}
+                  className="cursor-pointer px-7 py-3 rounded-xl text-white text-sm font-semibold transition-all active:scale-[.97]"
+                  style={{ background: "linear-gradient(135deg, #E8357A, #7B5EA7)", transitionProperty: "box-shadow, transform", boxShadow: "0 0 24px rgba(232,53,122,0.35)" }}
+                  onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 40px rgba(232,53,122,0.6)")}
+                  onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 24px rgba(232,53,122,0.35)")}
                 >
                   Get started free
                 </button>
@@ -148,7 +148,7 @@ export default function LandingPage() {
                   { v: "4-in-1",  l: "modules" },
                 ].map(s => (
                   <div key={s.l}>
-                    <p className="lp-mono text-base font-bold text-white">{s.v}</p>
+                    <p className="lp-serif text-base text-white">{s.v}</p>
                     <p className="lp-mono uppercase tracking-[.12em] mt-0.5" style={{ fontSize: 9, color: "rgba(255,255,255,.3)" }}>
                       {s.l}
                     </p>

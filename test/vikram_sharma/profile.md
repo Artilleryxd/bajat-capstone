@@ -51,18 +51,19 @@
 
 ## Assets
 
-| Asset Type  | Name                              | Purchase Price  | Current Value   | Appreciation Rate | Notes                                        |
-|-------------|-----------------------------------|-----------------|-----------------|-------------------|----------------------------------------------|
-| real_estate | 3BHK Apartment, Baner, Pune       | ₹55,00,000      | ₹72,00,000      | 7% p.a.           | Self-occupied; purchased 2018                |
-| vehicle     | Maruti Suzuki Ertiga (2022)       | ₹11,50,000      | ₹9,20,000       | –8% p.a.          | Family car; active car loan against it       |
-| gold        | Gold Jewellery & Coins (120g)     | ₹5,40,000       | ₹7,20,000       | 10% p.a.          | Pledged partially for gold loan (₹48,000)    |
-| equity      | HDFC Mutual Fund Portfolio        | ₹8,00,000       | ₹12,00,000      | 14% p.a.          | Diversified equity + debt funds; active SIP  |
-| fd          | ICICI Bank FD (Laddered)          | ₹3,00,000       | ₹3,42,000       | 7.5% p.a.         | 2-year FD, matures Jan 2027                  |
-| fd          | Post Office NSC                   | ₹1,00,000       | ₹1,16,000       | 7.7% p.a.         | 5-year NSC; matures 2027                     |
+| Asset Type  | Name                              | Purchase Date | Purchase Price  | Current Value   | Appreciation Rate | Notes                                        |
+|-------------|-----------------------------------|---------------|-----------------|-----------------|-------------------|----------------------------------------------|
+| real_estate | 3BHK Apartment, Baner, Pune       | 2018-04-15    | ₹55,00,000      | ₹72,00,000      | 7% p.a.           | Self-occupied                                |
+| vehicle     | Maruti Suzuki Ertiga (2022)       | 2022-02-08    | ₹11,50,000      | ₹9,20,000       | –8% p.a.          | Family car; active car loan against it       |
+| vehicle     | Royal Enfield Classic 350 (2021)  | 2021-09-25    | ₹2,10,000       | ₹1,60,000       | –7% p.a.          | Weekend bike                                 |
+| gold        | Gold Jewellery & Coins (120g)     | 2019-11-03    | ₹5,40,000       | ₹7,20,000       | 10% p.a.          | Pledged partially for gold loan (₹48,000)    |
+| gadget      | Sony Home Theatre System          | 2021-12-20    | ₹85,000         | ₹55,000         | –12% p.a.         | Living room A/V setup                        |
+| gadget      | LG 55" OLED TV                    | 2022-10-11    | ₹1,20,000       | ₹80,000         | –12% p.a.         | Main living room TV                          |
+| gadget      | Home Gym Equipment                | 2020-05-18    | ₹60,000         | ₹40,000         | –15% p.a.         | Treadmill + dumbbells; spare room            |
 
-**Total Assets: ~₹1,04,98,000**  
+**Total Assets: ~₹91,75,000**  
 **Total Liabilities: ~₹53,53,000 (all loans combined)**  
-**Net Worth (approx): ₹51,45,000**
+**Net Worth (approx): ₹38,22,000**
 
 > Vikram's net worth is positive primarily due to the appreciated Pune apartment. Despite high EMI burden, the property anchors his balance sheet.
 

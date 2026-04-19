@@ -48,18 +48,19 @@
 
 ## Assets
 
-| Asset Type | Name                        | Purchase Price | Current Value | Appreciation Rate | Notes                              |
-|------------|-----------------------------|---------------|---------------|-------------------|------------------------------------|
-| equity     | Zerodha Mutual Fund Portfolio | ₹1,00,000    | ₹1,50,000     | 15% p.a.          | Index funds + ELSS; active SIP     |
-| gadget     | MacBook Pro 14" (M3)        | ₹1,85,000     | ₹1,30,000     | –8% p.a.          | Primary work laptop                |
-| gadget     | iPhone 15                   | ₹79,000       | ₹55,000       | –15% p.a.         | Personal phone                     |
-| vehicle    | Honda Activa 6G             | ₹75,000       | ₹52,000       | –10% p.a.         | Daily commute within Mumbai        |
-| fd         | SBI Fixed Deposit           | ₹50,000       | ₹54,500       | 9% p.a.           | 1-year FD, matures Sep 2026        |
+| Asset Type | Name                        | Purchase Date | Purchase Price | Current Value | Appreciation Rate | Notes                              |
+|------------|-----------------------------|---------------|---------------|---------------|-------------------|------------------------------------|
+| gadget     | MacBook Pro 14" (M3)        | 2024-01-10    | ₹1,85,000     | ₹1,30,000     | –8% p.a.          | Primary work laptop                |
+| gadget     | iPhone 15                   | 2023-10-20    | ₹79,000       | ₹55,000       | –15% p.a.         | Personal phone                     |
+| gadget     | Sony 43" 4K Smart TV        | 2024-03-05    | ₹45,000       | ₹30,000       | –12% p.a.         | Living room TV at PG               |
+| gadget     | PlayStation 5               | 2023-12-18    | ₹54,000       | ₹36,000       | –15% p.a.         | Gaming console                     |
+| gadget     | Dell 27" Monitor + desk     | 2023-08-14    | ₹38,000       | ₹24,000       | –10% p.a.         | WFH setup — monitor, stand, chair  |
+| vehicle    | Honda Activa 6G             | 2022-06-30    | ₹75,000       | ₹52,000       | –10% p.a.         | Daily commute within Mumbai        |
 
-**Total Assets: ~₹4,41,500**  
-**Net Worth (approx): ₹4,41,500 − ₹4,87,000 (loans) = −₹45,500**
+**Total Assets: ~₹3,27,000**  
+**Net Worth (approx): ₹3,27,000 − ₹4,87,000 (loans) = −₹1,60,000**
 
-> Arjun is technically net-negative due to outstanding loans exceeding assets — realistic for a 26-year-old early in career.
+> Arjun is net-negative due to outstanding loans exceeding physical assets — realistic for a 26-year-old early in career.
 
 ## Expense Coverage
 

@@ -19,78 +19,40 @@ export default function LoginPage() {
   useEffect(() => {
     const verifySession = async () => {
       const token = getToken();
-      if (!token) {
-        setIsCheckingSession(false);
-        return;
-      }
-
+      if (!token) { setIsCheckingSession(false); return; }
       try {
         const res = await fetch(`${API_BASE_URL}/v1/profile/me`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (!res.ok) {
-          logout();
-          setIsCheckingSession(false);
-          return;
-        }
-
+        if (!res.ok) { logout(); setIsCheckingSession(false); return; }
         const profile = await res.json();
-        if (profile.onboarding_complete) {
-          router.replace("/dashboard");
-          return;
-        }
-
-        router.replace("/onboarding");
+        router.replace(profile.onboarding_complete ? "/dashboard" : "/onboarding");
       } catch {
         logout();
         setIsCheckingSession(false);
       }
     };
-
     verifySession();
   }, [router]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isValid },
-    getValues,
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    mode: "onChange",
-  });
+  const { register, handleSubmit, formState: { errors, isValid }, getValues } =
+    useForm<LoginFormValues>({ resolver: zodResolver(loginSchema), mode: "onChange" });
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     setErrorMessage("");
-    
     try {
       const res = await fetch(`${API_BASE_URL}/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
       const responseData = await res.json();
-
-      if (!res.ok) {
-        throw new Error(responseData.detail?.detail || responseData.detail?.message || responseData.message || "Failed to log in");
-      }
-
+      if (!res.ok) throw new Error(responseData.detail?.detail || responseData.detail?.message || responseData.message || "Failed to log in");
       setToken(responseData.access_token);
       if (responseData.refresh_token) setRefreshToken(responseData.refresh_token);
-
-      if (responseData.status === "ONBOARDING_REQUIRED") {
-        router.replace("/onboarding");
-      } else {
-        router.replace("/dashboard");
-      }
+      router.replace(responseData.status === "ONBOARDING_REQUIRED" ? "/onboarding" : "/dashboard");
     } catch (error: any) {
-      console.error("Login Error:", error);
       setErrorMessage(error.message);
     } finally {
       setIsLoading(false);
@@ -99,142 +61,186 @@ export default function LoginPage() {
 
   const handleForgotPassword = async () => {
     const email = getValues("email");
-    if (!email || errors.email) {
-      setErrorMessage("Please enter a valid email to reset password.");
-      return;
-    }
-
+    if (!email || errors.email) { setErrorMessage("Please enter a valid email to reset password."); return; }
     try {
       const res = await fetch(`${API_BASE_URL}/v1/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-
       const data = await res.json();
-      
-      if (!res.ok) {
-         throw new Error(data.detail?.message || data.message || "Failed to reset password");
-      }
-      
+      if (!res.ok) throw new Error(data.detail?.message || data.message || "Failed to reset password");
       alert("Password reset email sent (if email exists). Please check your inbox.");
     } catch (error: any) {
       setErrorMessage(error.message);
     }
   };
 
-  if (isCheckingSession) {
-    return null;
-  }
+  if (isCheckingSession) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-8 p-6 space-y-8 border border-gray-100">
-        
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Welcome back
-          </h1>
-          <p className="text-sm text-gray-500">
-            Log in to continue your financial journey
-          </p>
-        </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Plus+Jakarta+Sans:wght@700;800&display=swap');
+        .auth-grid {
+          background-image:
+            linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+          background-size: 44px 44px;
+        }
+        .auth-field {
+          width: 100%;
+          height: 44px;
+          background: rgba(255,255,255,.05);
+          border: 1px solid rgba(255,255,255,.1);
+          border-radius: 10px;
+          padding: 0 12px;
+          font-size: 14px;
+          color: white;
+          outline: none;
+          transition: border-color .15s ease, background .15s ease;
+          font-family: 'Inter', sans-serif;
+        }
+        .auth-field::placeholder { color: rgba(255,255,255,.25); }
+        .auth-field:focus {
+          border-color: #E8357A;
+          background: rgba(232,53,122,.06);
+        }
+        .auth-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255,255,255,.5);
+          margin-bottom: 6px;
+          letter-spacing: .04em;
+          font-family: 'Inter', sans-serif;
+        }
+      `}</style>
 
-        {errorMessage && (
-          <div className="bg-red-50 text-red-500 text-sm p-3 rounded-lg border border-red-100">
-            {errorMessage}
-          </div>
-        )}
+      <div className="min-h-screen flex items-center justify-center auth-grid overflow-hidden"
+           style={{ background: "#07090C", colorScheme: "dark" }}>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          <div className="space-y-1.5">
-            <label
-              htmlFor="email"
-              className="text-sm font-medium text-gray-700"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="text"
-              placeholder="you@example.com"
-              {...register("email")}
-              className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
-            {errors.email && (
-              <p className="text-xs text-red-500 font-medium pt-1">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
+        {/* Ambient glows */}
+        <div className="fixed pointer-events-none"
+             style={{ top: "-10%", right: "10%", width: 480, height: 480,
+               background: "radial-gradient(circle, rgba(232,53,122,.07) 0%, transparent 70%)" }} />
+        <div className="fixed pointer-events-none"
+             style={{ bottom: "-10%", left: "5%", width: 360, height: 360,
+               background: "radial-gradient(circle, rgba(59,130,246,.05) 0%, transparent 70%)" }} />
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="text-xs font-medium text-blue-600 hover:text-blue-500 transition-all focus:outline-none"
-              >
-                Forgot password?
-              </button>
+        <div className="relative z-10 w-full max-w-md px-4">
+
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-2.5 mb-8">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #E8357A, #7B5EA7)" }}>
+              <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4">
+                <path d="M2 12 L5.5 7.5 L8.5 9.5 L13 3" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                {...register("password")}
-                placeholder="••••••••"
-                className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
+            <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 18, color: "white", letterSpacing: "-0.02em" }}>
+              FinSight AI
+            </span>
+          </div>
+
+          {/* Card */}
+          <div style={{
+            background: "rgba(255,255,255,.03)",
+            border: "1px solid rgba(255,255,255,.09)",
+            borderRadius: 20,
+            padding: "36px 32px",
+            boxShadow: "0 32px 80px rgba(0,0,0,.5)",
+          }}>
+            <div style={{ marginBottom: 28, textAlign: "center" }}>
+              <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 26,
+                           color: "white", letterSpacing: "-0.02em", marginBottom: 6 }}>
+                Welcome back
+              </h1>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,.4)", fontFamily: "'Inter', sans-serif" }}>
+                Log in to continue your financial journey
+              </p>
+            </div>
+
+            {errorMessage && (
+              <div style={{ background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.25)",
+                            borderRadius: 10, padding: "10px 14px", fontSize: 13,
+                            color: "#FCA5A5", marginBottom: 20, fontFamily: "'Inter', sans-serif" }}>
+                {errorMessage}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label className="auth-label">Email</label>
+                <input type="text" placeholder="you@example.com" {...register("email")} className="auth-field" />
+                {errors.email && (
+                  <p style={{ fontSize: 11, color: "#FCA5A5", marginTop: 5, fontFamily: "'Inter', sans-serif" }}>
+                    {errors.email.message}
+                  </p>
                 )}
+              </div>
+
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <label className="auth-label" style={{ margin: 0 }}>Password</label>
+                  <button type="button" onClick={handleForgotPassword}
+                    style={{ fontSize: 11, color: "#E8357A", background: "none", border: "none",
+                             cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>
+                    Forgot password?
+                  </button>
+                </div>
+                <div style={{ position: "relative" }}>
+                  <input type={showPassword ? "text" : "password"} placeholder="••••••••"
+                    {...register("password")} className="auth-field" style={{ paddingRight: 40 }} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                             background: "none", border: "none", cursor: "pointer",
+                             color: "rgba(255,255,255,.3)" }}>
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p style={{ fontSize: 11, color: "#FCA5A5", marginTop: 5, fontFamily: "'Inter', sans-serif" }}>
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <button type="submit" disabled={!isValid || isLoading}
+                style={{
+                  marginTop: 8,
+                  height: 44,
+                  borderRadius: 10,
+                  background: isValid && !isLoading ? "#E8357A" : "rgba(232,53,122,.3)",
+                  border: "none",
+                  color: isValid && !isLoading ? "#000" : "rgba(0,0,0,.4)",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: isValid && !isLoading ? "pointer" : "not-allowed",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  transition: "background .15s ease",
+                  width: "100%",
+                }}>
+                {isLoading && <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />}
+                Log in
               </button>
-            </div>
-            {errors.password && (
-              <p className="text-xs text-red-500 font-medium pt-1">
-                {errors.password.message}
-              </p>
-            )}
+            </form>
+
+            <p style={{ textAlign: "center", fontSize: 13, color: "rgba(255,255,255,.35)",
+                        marginTop: 24, fontFamily: "'Inter', sans-serif" }}>
+              Don&apos;t have an account?{" "}
+              <button type="button" onClick={() => router.push("/signup")}
+                style={{ color: "#E8357A", background: "none", border: "none",
+                         cursor: "pointer", fontWeight: 500, fontFamily: "'Inter', sans-serif" }}>
+                Sign up
+              </button>
+            </p>
           </div>
-
-          <button
-            type="submit"
-            disabled={!isValid || isLoading}
-            className="w-full inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-blue-600 text-white hover:bg-blue-700 h-11 px-4 py-2 mt-2 shadow-sm"
-          >
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            Login
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500 pt-2">
-          Don't have an account?{" "}
-          <button 
-            type="button" 
-            onClick={() => router.push("/signup")}
-            className="font-medium text-blue-600 hover:text-blue-500 hover:underline transition-all"
-          >
-            Sign up
-          </button>
-        </p>
-
+        </div>
       </div>
-    </div>
+    </>
   );
 }
