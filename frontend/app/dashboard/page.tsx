@@ -4,12 +4,12 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, Legend,
+  PieChart, Pie, Cell,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
 } from "recharts"
 import {
-  Wallet, TrendingUp, TrendingDown, Receipt, PiggyBank,
+  Wallet, TrendingUp, TrendingDown, Receipt,
   Landmark, Scale, Sparkles, ChevronRight, Home, Car,
   CircleDollarSign, Smartphone, Building2, AlertTriangle,
   CheckCircle2, Info, Loader2, ArrowRight, Target,
@@ -96,23 +96,6 @@ interface InvestmentData {
 
 // ── Static demo chart data (used when API hasn't returned real data yet) ─────
 
-const DEMO_NET_WORTH = [
-  { month: "May", value: 3600000 }, { month: "Jun", value: 3720000 },
-  { month: "Jul", value: 3810000 }, { month: "Aug", value: 3780000 },
-  { month: "Sep", value: 3950000 }, { month: "Oct", value: 3880000 },
-  { month: "Nov", value: 4010000 }, { month: "Dec", value: 4120000 },
-  { month: "Jan", value: 4190000 }, { month: "Feb", value: 4240000 },
-  { month: "Mar", value: 4260000 }, { month: "Apr", value: 4280000 },
-]
-
-const DEMO_INCOME_EXPENSE = [
-  { month: "Nov", income: 120000, expenses: 71000 },
-  { month: "Dec", income: 120000, expenses: 78000 },
-  { month: "Jan", income: 120000, expenses: 65000 },
-  { month: "Feb", income: 120000, expenses: 69000 },
-  { month: "Mar", income: 120000, expenses: 72000 },
-  { month: "Apr", income: 120000, expenses: 68400 },
-]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -205,6 +188,8 @@ export default function DashboardPage() {
   const [investment, setInvestment] = useState<InvestmentData | null>(null)
   const [actualExpenses, setActualExpenses] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [healthScore, setHealthScore] = useState<number | null>(null)
+  const [healthLabel, setHealthLabel] = useState<string | null>(null)
 
   const fetchAll = useCallback(async () => {
     const token = getToken()
@@ -225,29 +210,83 @@ export default function DashboardPage() {
       fetchWithAuth(`/api/expenses/${monthYear}`),
     ])
 
-    if (profRes.status === "fulfilled" && profRes.value.ok)
-      setProfile(await profRes.value.json())
-    if (budRes.status === "fulfilled" && budRes.value.ok)
-      setBudget(await budRes.value.json())
+    let prof: ProfileData | null = null
+    let bud: BudgetData | null = null
+    let loanList: LoanData[] = []
+    let nwData: NetWorthData | null = null
+    let invData: InvestmentData | null = null
+    let expTotal: number | null = null
+
+    if (profRes.status === "fulfilled" && profRes.value.ok) {
+      prof = await profRes.value.json()
+      setProfile(prof)
+    }
+    if (budRes.status === "fulfilled" && budRes.value.ok) {
+      bud = await budRes.value.json()
+      setBudget(bud)
+    }
     if (loansRes.status === "fulfilled" && loansRes.value.ok) {
       const d = await loansRes.value.json()
-      setLoans(d.loans ?? d ?? [])
+      loanList = d.loans ?? d ?? []
+      setLoans(loanList)
     }
     if (assetsRes.status === "fulfilled" && assetsRes.value.ok) {
       const d = await assetsRes.value.json()
       setAssets(d.assets ?? [])
     }
-    if (nwRes.status === "fulfilled" && nwRes.value.ok)
-      setNw(await nwRes.value.json())
-    if (invRes.status === "fulfilled" && invRes.value.ok)
-      setInvestment(await invRes.value.json())
+    if (nwRes.status === "fulfilled" && nwRes.value.ok) {
+      nwData = await nwRes.value.json()
+      setNw(nwData)
+    }
+    if (invRes.status === "fulfilled" && invRes.value.ok) {
+      invData = await invRes.value.json()
+      setInvestment(invData)
+    }
     if (expRes.status === "fulfilled" && expRes.value.ok) {
       const d = await expRes.value.json()
       const total = d?.summary?.total ?? null
-      if (total != null) setActualExpenses(total)
+      if (total != null) { expTotal = total; setActualExpenses(total) }
     }
 
     setLoading(false)
+
+    // Fetch AI health score in the background after main data is ready
+    if (prof?.monthly_income && nwData) {
+      const needsT = Object.values(bud?.needs ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+      const wantsT = Object.values(bud?.wants ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+      const investT = Object.values(bud?.investments ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+      const emergT = bud?.emergency ?? 0
+      const repayT = Object.values(bud?.repayment ?? {}).reduce((a: number, b) => a + (b ?? 0), 0)
+      const budgetTotal = needsT + wantsT + investT + emergT + repayT
+      const expenses = expTotal ?? (budgetTotal > 0 ? budgetTotal : null)
+      const totalEmi = loanList.reduce((s, l) => s + Number(l.emi_amount), 0)
+
+      try {
+        const hsRes = await fetchWithAuth("/api/profile/health-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            monthly_income: prof.monthly_income,
+            monthly_expenses: expenses,
+            net_worth: nwData.net_worth,
+            total_assets: nwData.total_assets,
+            total_liabilities: nwData.total_liabilities,
+            debt_ratio: nwData.debt_ratio ?? null,
+            loan_count: loanList.length,
+            total_emi: totalEmi,
+            has_investment_strategy: (invData?.allocations?.length ?? 0) > 0,
+            is_debt_heavy: bud?.is_debt_heavy ?? false,
+          }),
+        })
+        if (hsRes.ok) {
+          const hs = await hsRes.json()
+          setHealthScore(hs.score ?? null)
+          setHealthLabel(hs.label ?? null)
+        }
+      } catch {
+        // silently degrade — health score shows "—"
+      }
+    }
   }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -272,36 +311,9 @@ export default function DashboardPage() {
   // Monthly expenses: actual tracked spend > budget total fallback
   const monthlyExpenses = actualExpenses ?? (budgetGrandTotal > 0 ? budgetGrandTotal : null)
 
-  // Savings rate: (income - expenses) / income × 100; null if uncalculable or negative
-  const savingsRate = (() => {
-    if (!monthlyIncome || monthlyIncome <= 0 || monthlyExpenses == null) return null
-    const rate = Math.round(((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100)
-    return rate > 0 ? rate : null
-  })()
 
   // Net worth from the dedicated networth endpoint
   const netWorthVal = nw?.net_worth ?? null
-
-  // Health score: computed from available signals (0–100)
-  const healthScore = (() => {
-    if (!nw && savingsRate == null) return null
-    let score = 50
-    if (savingsRate != null) {
-      if (savingsRate >= 30) score += 25
-      else if (savingsRate >= 20) score += 15
-      else if (savingsRate >= 10) score += 5
-      else score -= 15
-    }
-    if (nw) {
-      const dr = nw.debt_ratio ?? 0
-      if (dr < 20) score += 20
-      else if (dr < 35) score += 10
-      else if (dr < 50) score += 0
-      else score -= 15
-    }
-    if ((investment?.allocations?.length ?? 0) > 0) score += 5
-    return Math.min(100, Math.max(0, score))
-  })()
 
   const budgetPieData = budgetGrandTotal > 0 ? [
     { name: "Needs", value: needsTotal, color: "#22C55E" },
@@ -329,13 +341,10 @@ export default function DashboardPage() {
     .sort((a, b) => Number(b.current_value ?? 0) - Number(a.current_value ?? 0))
     .slice(0, 4)
 
-  const netWorthChartData = DEMO_NET_WORTH as Array<{ month: string; value: number }>
-  const incomeExpenseData = DEMO_INCOME_EXPENSE as Array<{ month: string; income: number; expenses: number }>
-
   const getHealthColor = (s: number | null) =>
     s == null ? "#94A3B8" : s >= 80 ? "#10B981" : s >= 60 ? "#F59E0B" : s >= 40 ? "#F97316" : "#EF4444"
   const getHealthLabel = (s: number | null) =>
-    s == null ? "No data" : s >= 80 ? "Excellent" : s >= 60 ? "Good" : s >= 40 ? "Fair" : "Needs Work"
+    healthLabel ?? (s == null ? "No data" : s >= 80 ? "Excellent" : s >= 60 ? "Good" : s >= 40 ? "Fair" : "Needs Work")
 
   const sipGap = investment?.required_sip_for_goal && investment?.recommended_sip
     ? investment.required_sip_for_goal - investment.recommended_sip
@@ -427,7 +436,6 @@ export default function DashboardPage() {
                   { label: "Net Worth", value: safeFmt(netWorthVal, formatCompactCurrency), color: "text-primary" },
                   { label: "Monthly Income", value: safeFmt(monthlyIncome, formatCompactCurrency), color: "text-emerald-600" },
                   { label: "Monthly Expenses", value: safeFmt(monthlyExpenses, formatCompactCurrency), color: "text-blue-600" },
-                  { label: "Savings Rate", value: savingsRate != null ? `${savingsRate}%` : "—", color: "text-amber-600" },
                 ].map(item => (
                   <div key={item.label} className="space-y-0.5">
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{item.label}</p>
@@ -455,109 +463,20 @@ export default function DashboardPage() {
         {/* ── 3. Metrics Grid ── */}
         <div>
           <SectionTitle>Key Metrics</SectionTitle>
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <StatCard title="Net Worth" value={safeFmt(netWorthVal, formatCompactCurrency)}
               icon={Scale} iconClass="bg-primary/10 text-primary" />
             <StatCard title="Monthly Income" value={safeFmt(monthlyIncome, formatCompactCurrency)}
               icon={TrendingUp} iconClass="bg-emerald-500/10 text-emerald-600" />
             <StatCard title="Monthly Expenses" value={safeFmt(monthlyExpenses, formatCompactCurrency)}
               icon={Receipt} iconClass="bg-blue-500/10 text-blue-600" />
-            <StatCard title="Savings Rate" value={savingsRate != null ? `${savingsRate}%` : "—"}
-              icon={PiggyBank} iconClass="bg-amber-500/10 text-amber-600" />
             <StatCard title="Loans Outstanding" value={safeFmt(totalLoansOutstanding, formatCompactCurrency)}
               icon={Landmark} iconClass="bg-red-500/10 text-red-600"
               className="col-span-2 lg:col-span-1" />
           </div>
         </div>
 
-        {/* ── 4. Charts Row ── */}
-        <div>
-          <SectionTitle>Trends</SectionTitle>
-          <div className="grid gap-6 lg:grid-cols-5">
-
-            {/* Net Worth Area Chart — 3/5 */}
-            <Card className="lg:col-span-3">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-base">Net Worth Trend</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">Last 12 months</p>
-                  </div>
-                  <span className="text-lg font-bold text-primary">
-                    {safeFmt(netWorthVal, formatCompactCurrency)}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[220px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={netWorthChartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                      <YAxis tickFormatter={v => formatCompactCurrency(v)} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={52} />
-                      <RechartsTooltip
-                        formatter={(v: number) => [formatCurrency(v), "Net Worth"]}
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                      />
-                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2}
-                        fill="url(#nwGrad)" dot={false}
-                        activeDot={{ r: 5, fill: "#10B981", stroke: "hsl(var(--card))", strokeWidth: 2 }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Income vs Expenses Bar Chart — 2/5 */}
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-2">
-                <div>
-                  <CardTitle className="text-base">Income vs Expenses</CardTitle>
-                  <p className="text-xs text-muted-foreground mt-0.5">Last 6 months</p>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[220px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={incomeExpenseData} barGap={2} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                      <YAxis tickFormatter={v => formatCompactCurrency(v)} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={48} />
-                      <RechartsTooltip
-                        content={({ active, payload, label }) => {
-                          if (!active || !payload?.length) return null
-                          return (
-                            <div className="rounded-lg border border-border bg-card shadow-md px-3 py-2 text-xs">
-                              <p className="font-semibold text-foreground mb-1.5">{label}</p>
-                              {payload.map((entry) => (
-                                <p key={String(entry.name)} className="flex items-center gap-2">
-                                  <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: (entry as { fill?: string }).fill }} />
-                                  <span className="text-muted-foreground">{entry.name === "income" ? "Income" : "Expenses"}:</span>
-                                  <span className="font-medium text-foreground">{formatCurrency(Number(entry.value))}</span>
-                                </p>
-                              ))}
-                            </div>
-                          )
-                        }}
-                      />
-                      <Legend iconType="circle" iconSize={8} formatter={v => v === "income" ? "Income" : "Expenses"} wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="income" fill="#10B981" radius={[4, 4, 0, 0]} name="income" />
-                      <Bar dataKey="expenses" fill="#3B82F6" radius={[4, 4, 0, 0]} name="expenses" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* ── 5. Budget & Spending ── */}
+        {/* ── 4. Budget & Spending ── */}
         {budgetGrandTotal > 0 && (
           <div>
             <SectionTitle>Budget — April 2026</SectionTitle>

@@ -278,3 +278,79 @@ No explanation, no markdown. Just the JSON."""
     except Exception as e:
         logger.error("Portfolio return estimation failed: %s", e)
         return None
+
+
+def generate_health_score(
+    monthly_income: float,
+    monthly_expenses: float | None,
+    net_worth: float | None,
+    total_assets: float | None,
+    total_liabilities: float | None,
+    debt_ratio: float | None,
+    loan_count: int,
+    total_emi: float,
+    has_investment_strategy: bool,
+    is_debt_heavy: bool,
+    currency: str = "INR",
+) -> dict | None:
+    """
+    Ask Claude to compute a financial health score (0–100) with a one-line label
+    and a brief 2-sentence rationale.
+
+    Returns {"score": int, "label": str, "rationale": str} or None on failure.
+    """
+    import json as _json
+
+    ctx_parts = [
+        f"Monthly income: {currency} {monthly_income:,.0f}",
+        f"Monthly expenses: {currency} {monthly_expenses:,.0f}" if monthly_expenses else "Monthly expenses: unknown",
+        f"Net worth: {currency} {net_worth:,.0f}" if net_worth is not None else "Net worth: unknown",
+        f"Total assets: {currency} {total_assets:,.0f}" if total_assets is not None else "Total assets: unknown",
+        f"Total liabilities: {currency} {total_liabilities:,.0f}" if total_liabilities is not None else "Total liabilities: unknown",
+        f"Debt ratio: {debt_ratio:.1f}%" if debt_ratio is not None else "Debt ratio: unknown",
+        f"Active loans: {loan_count}",
+        f"Total monthly EMI: {currency} {total_emi:,.0f}",
+        f"Has investment strategy: {'yes' if has_investment_strategy else 'no'}",
+        f"Debt-heavy mode: {'yes' if is_debt_heavy else 'no'}",
+    ]
+    context = "\n".join(ctx_parts)
+
+    prompt = f"""You are FinSight, a financial wellness advisor. Given the following financial snapshot, compute a financial health score from 0 to 100 and a brief assessment.
+
+Scoring guidelines (these are suggestions — apply your own judgement):
+- Savings rate (income minus expenses as % of income): 20%+ is healthy, <10% is poor
+- Debt ratio (liabilities / assets): <20% excellent, 20–35% good, 35–50% moderate, >50% poor
+- EMI-to-income ratio: <30% healthy, >40% stressed
+- Investment activity: having a strategy adds to score
+- No active loans is a positive signal
+- Never award 100 — a perfect score is unreachable; top scores should be 88–95 for genuinely excellent profiles
+
+User's financial snapshot:
+{context}
+
+Respond ONLY with valid JSON in this exact format:
+{{"score": 82, "label": "Very Good", "rationale": "Your debt ratio is low and savings rate is healthy. Continuing SIP investments will strengthen your long-term position."}}
+
+No markdown, no extra keys, no explanation outside the JSON."""
+
+    try:
+        client = _get_client()
+        response = client.messages.create(
+            model=HAIKU_MODEL,
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        data = _json.loads(raw)
+        return {
+            "score": max(0, min(100, int(data["score"]))),
+            "label": str(data.get("label", "")),
+            "rationale": str(data.get("rationale", "")),
+        }
+    except Exception as e:
+        logger.error("Health score generation failed: %s", e)
+        return None
