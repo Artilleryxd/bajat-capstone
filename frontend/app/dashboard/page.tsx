@@ -187,6 +187,7 @@ export default function DashboardPage() {
   const [nw, setNw] = useState<NetWorthData | null>(null)
   const [investment, setInvestment] = useState<InvestmentData | null>(null)
   const [actualExpenses, setActualExpenses] = useState<number | null>(null)
+  const [actualRepaymentSpent, setActualRepaymentSpent] = useState<number | null>(null)
   const [spendingSummary, setSpendingSummary] = useState<{
     needs: number; wants: number; investments: number; repayment: number; emergency: number
   } | null>(null)
@@ -251,6 +252,13 @@ export default function DashboardPage() {
       const d = await expRes.value.json()
       const total = d?.summary?.total ?? null
       if (total != null) { expTotal = total; setActualExpenses(total) }
+
+      const repaymentSpent = d?.summary?.categories?.repayments?.total
+      if (repaymentSpent != null) {
+        setActualRepaymentSpent(Number(repaymentSpent))
+      } else {
+        setActualRepaymentSpent(0)
+      }
     }
     if (spendRes.status === "fulfilled" && spendRes.value.ok) {
       const d = await spendRes.value.json()
@@ -575,7 +583,7 @@ export default function DashboardPage() {
                     { label: "Needs", budget: needsTotal, color: "#22C55E", spent: spendingSummary?.needs ?? 0, showPct: true },
                     { label: "Wants", budget: wantsTotal, color: "#3B82F6", spent: spendingSummary?.wants ?? 0, showPct: true },
                     { label: "Investments", budget: investTotal, color: "#10B981", spent: spendingSummary?.investments ?? 0, showPct: true },
-                    { label: "Repayments", budget: repayTotal, color: "#EF4444", spent: spendingSummary?.repayment ?? 0, showPct: true },
+                      { label: "Repayments", budget: repayTotal, color: "#EF4444", spent: actualRepaymentSpent ?? 0, showPct: true },
                     { label: "Emergency", budget: emergencyTotal, color: "#F59E0B", spent: spendingSummary?.emergency ?? 0, showPct: false },
                   ].filter(r => r.budget > 0).map(row => {
                     const pct = row.budget > 0 ? Math.min((row.spent / row.budget) * 100, 100) : 0

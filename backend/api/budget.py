@@ -249,23 +249,6 @@ async def spending_summary(user: dict = Depends(get_current_user)):
             if budget_section:
                 summary[budget_section] += round(amount, 2)
 
-        # If no repayment expenses have been tracked yet, fall back to loan EMI totals
-        # so loans always reflect in the repayment hover as soon as they're added.
-        if summary["repayment"] == 0.0:
-            try:
-                loans_result = (
-                    supabase_admin.table("loans")
-                    .select("emi_amount")
-                    .eq("user_id", user["id"])
-                    .eq("is_active", True)
-                    .execute()
-                )
-                if loans_result.data:
-                    from services.budget_ai import _extract_total_emi
-                    summary["repayment"] = round(_extract_total_emi(loans_result.data), 2)
-            except Exception as exc:
-                logger.warning("Could not fetch loan EMIs for spending summary: %s", exc)
-
         return {
             "period": current_month_str,
             "summary": summary,
