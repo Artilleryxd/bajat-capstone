@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
@@ -14,8 +13,8 @@ import {
   Loader2,
   Pencil,
   Lock,
-  MessageCircle,
   Info,
+  AlertTriangle,
 } from "lucide-react"
 
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
@@ -71,18 +70,6 @@ function sumDict(dict: Record<string, number | undefined> | number | undefined):
   return Object.values(dict).reduce((acc: number, v) => acc + (v ?? 0), 0)
 }
 
-/** Normalize any section from old (number) or new (dict) format */
-function normalizeDict(
-  val: Record<string, number | undefined> | number | undefined
-): Record<string, number> {
-  if (typeof val === "number") return val > 0 ? { total: val } : {}
-  if (!val || typeof val !== "object") return {}
-  const result: Record<string, number> = {}
-  for (const [k, v] of Object.entries(val)) {
-    if (v !== undefined && v > 0) result[k] = v
-  }
-  return result
-}
 
 export default function BudgetPage() {
   const router = useRouter()
@@ -346,344 +333,183 @@ export default function BudgetPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Smart Budget Planner</h1>
-            <p className="text-muted-foreground">
-              AI-powered personalized budget based on your profile
-            </p>
+            <p className="text-muted-foreground text-sm">AI-powered personalized budget based on your profile</p>
           </div>
           <div className="flex flex-col items-start sm:items-end gap-1">
-            <div className="flex gap-2">
-              <Button variant="outline" asChild>
-                <Link href="/budget/chat">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Budget Chat
-                </Link>
-              </Button>
-              <Button onClick={handleGenerate} disabled={generating || isLoading}>
-                {generating ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
-                )}
-                {generating ? "Generating..." : "Generate Budget"}
-              </Button>
-            </div>
+            <Button onClick={handleGenerate} disabled={generating || isLoading}>
+              {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+              {generating ? "Generating…" : "Generate Budget"}
+            </Button>
             {hasTemporaryOverrides && (
               <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <Info className="w-3.5 h-3.5" />
-                Using temporary profile overrides for this generation
+                Using temporary profile overrides
               </p>
             )}
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Profile Inputs */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Your Profile</CardTitle>
-                  <CardDescription>
-                    {editing ? "Edit values and re-generate" : "Pre-filled from your account"}
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={editing ? applyTemporaryOverrides : enterEditMode}
-                  disabled={loadingProfile || !effectiveProfile}
-                >
-                  {editing ? (
-                    <>
-                      <Lock className="w-4 h-4 mr-1" />
-                      Lock
-                    </>
-                  ) : (
-                    <>
-                      <Pencil className="w-4 h-4 mr-1" />
-                      Edit
-                    </>
-                  )}
-                </Button>
+        {/* ── Profile Card — horizontal ── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Your Profile</CardTitle>
+                <CardDescription className="text-xs">
+                  {editing ? "Edit values then re-generate" : "Pre-filled from your account"}
+                </CardDescription>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {loadingProfile ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={editing ? applyTemporaryOverrides : enterEditMode}
+                disabled={loadingProfile || !effectiveProfile}
+                className="gap-1.5 h-8"
+              >
+                {editing ? <><Lock className="w-3.5 h-3.5" />Lock</> : <><Pencil className="w-3.5 h-3.5" />Edit</>}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingProfile ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : editing ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Monthly Income</Label>
+                  <Input type="number" min="1" value={editIncome} onChange={e => setEditIncome(e.target.value)} />
                 </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">City</Label>
+                  <Input value={editCity} onChange={e => setEditCity(e.target.value)} placeholder="e.g. Mumbai" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Neighbourhood</Label>
+                  <Input value={editNeighbourhood} onChange={e => setEditNeighbourhood(e.target.value)} placeholder="e.g. Kharghar" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Housing Status</Label>
+                  <Select value={editHousing} onValueChange={setEditHousing}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rented">Rented</SelectItem>
+                      <SelectItem value="owned">Owned</SelectItem>
+                      <SelectItem value="family">Family</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Marital Status</Label>
+                  <Select value={editMarital} onValueChange={setEditMarital}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">Single</SelectItem>
+                      <SelectItem value="married">Married</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Dependents</Label>
+                  <Input type="number" min="0" value={editDependents} onChange={e => setEditDependents(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Occupation</Label>
+                  <Input value={editIncomeType} onChange={e => setEditIncomeType(e.target.value)} placeholder="e.g. Software Engineer" />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-x-6 gap-y-3">
+                {[
+                  { label: "Monthly Income", value: effectiveProfile?.monthly_income ? formatCurrency(effectiveProfile.monthly_income) : "Not set" },
+                  { label: "City", value: effectiveProfile?.city || "Not set" },
+                  { label: "Neighbourhood", value: effectiveProfile?.neighbourhood || "Not set" },
+                  { label: "Housing", value: effectiveProfile?.housing_status || "Not set" },
+                  { label: "Marital Status", value: effectiveProfile?.marital_status || "Not set" },
+                  { label: "Dependents", value: String(effectiveProfile?.num_dependents ?? 0) },
+                  { label: "Occupation", value: effectiveProfile?.income_type || "Not set" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">{label}</p>
+                    <p className="text-sm font-medium capitalize truncate">{value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── Budget content ── */}
+        {budget ? (
+          <div className="space-y-6">
+            {/* Debt-heavy warning */}
+            {budget.is_debt_heavy && (
+              <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-destructive text-sm">High Loan Burden Detected</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Your EMIs consume 40%+ of your income. Investments and emergency savings have been paused — focus on clearing your loans first.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Donut chart (left) + Category cards (right) */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Left — donut chart */}
+              <BudgetChart data={chartData} spendingSummary={spendingSummary} />
+
+              {/* Right — category cards in 2×2 grid */}
+              <div className="grid grid-cols-2 gap-4 content-start">
+                {sectionCards.map((card) => (
+                  <BudgetCard
+                    key={card.title}
+                    title={card.title}
+                    amount={card.amount}
+                    percentage={pct(card.amount)}
+                    icon={card.icon}
+                    color={card.color}
+                    description={card.description}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* AI Insights — full width */}
+            <AIInsights insights={budget.insights} />
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-10 w-10 animate-spin text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Loading your budget…</p>
+                </>
               ) : (
                 <>
-                  {/* Monthly Income */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Monthly Income</Label>
-                    {editing ? (
-                      <Input
-                        type="number"
-                        min="1"
-                        value={editIncome}
-                        onChange={(e) => setEditIncome(e.target.value)}
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">
-                        {effectiveProfile?.monthly_income ? formatCurrency(effectiveProfile.monthly_income) : "Not set"}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* City */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">City</Label>
-                    {editing ? (
-                      <Input
-                        value={editCity}
-                        onChange={(e) => setEditCity(e.target.value)}
-                        placeholder="e.g. Mumbai"
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">{effectiveProfile?.city || "Not set"}</p>
-                    )}
-                  </div>
-
-                  {/* Neighbourhood */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Neighbourhood</Label>
-                    {editing ? (
-                      <Input
-                        value={editNeighbourhood}
-                        onChange={(e) => setEditNeighbourhood(e.target.value)}
-                        placeholder="e.g. Kharghar"
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">{effectiveProfile?.neighbourhood || "Not set"}</p>
-                    )}
-                  </div>
-
-                  {/* Housing Status */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Housing Status</Label>
-                    {editing ? (
-                      <Select value={editHousing} onValueChange={setEditHousing}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="rented">Rented</SelectItem>
-                          <SelectItem value="owned">Owned</SelectItem>
-                          <SelectItem value="family">Family</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-sm font-medium capitalize">{effectiveProfile?.housing_status || "Not set"}</p>
-                    )}
-                  </div>
-
-                  {/* Marital Status */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Marital Status</Label>
-                    {editing ? (
-                      <Select value={editMarital} onValueChange={setEditMarital}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="single">Single</SelectItem>
-                          <SelectItem value="married">Married</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-sm font-medium capitalize">{effectiveProfile?.marital_status || "Not set"}</p>
-                    )}
-                  </div>
-
-                  {/* Dependents */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Dependents</Label>
-                    {editing ? (
-                      <Input
-                        type="number"
-                        min="0"
-                        value={editDependents}
-                        onChange={(e) => setEditDependents(e.target.value)}
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">{effectiveProfile?.num_dependents ?? 0}</p>
-                    )}
-                  </div>
-
-                  {/* Occupation */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Occupation</Label>
-                    {editing ? (
-                      <Input
-                        value={editIncomeType}
-                        onChange={(e) => setEditIncomeType(e.target.value)}
-                        placeholder="e.g. Software Engineer"
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">{effectiveProfile?.income_type || "Not set"}</p>
-                    )}
-                  </div>
+                  <Sparkles className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Budget Yet</h3>
+                  <p className="text-muted-foreground mb-4 max-w-sm text-sm">
+                    Click &quot;Generate Budget&quot; to create a personalized AI-powered budget based on your profile, loans, and location.
+                  </p>
+                  <Button onClick={handleGenerate} disabled={generating}>
+                    {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    Generate Budget
+                  </Button>
                 </>
               )}
             </CardContent>
           </Card>
+        )}
 
-          {/* Budget Output */}
-          <div className="lg:col-span-2 space-y-6">
-            {budget ? (
-              <>
-                {/* Summary Cards — only show sections with amount > 0 */}
-                <div className={`grid gap-4 sm:grid-cols-2 ${sectionCards.length >= 5 ? "lg:grid-cols-5" : sectionCards.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
-                  {sectionCards.map((card) => (
-                    <BudgetCard
-                      key={card.title}
-                      title={card.title}
-                      amount={card.amount}
-                      percentage={pct(card.amount)}
-                      icon={card.icon}
-                      color={card.color}
-                      description={card.description}
-                    />
-                  ))}
-                </div>
-
-                {/* Donut Chart with hover tooltips */}
-                <BudgetChart data={chartData} spendingSummary={spendingSummary} />
-
-                {/* Needs Breakdown */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.needs))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Needs Breakdown</CardTitle>
-                        <CardDescription>Detailed allocation within essential spending</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-
-                {/* Wants Breakdown */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.wants))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Wants Breakdown</CardTitle>
-                        <CardDescription>Detailed allocation within lifestyle spending</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-
-                {/* Investments Breakdown */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.investments))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Investments Breakdown</CardTitle>
-                        <CardDescription>How your investment allocation is distributed</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-
-                {/* Repayment Breakdown — only if loans exist */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.repayment))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Loan Repayment</CardTitle>
-                        <CardDescription>Fixed monthly EMI obligations</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-
-                {/* AI Insights */}
-                <AIInsights insights={budget.insights} />
-              </>
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-10 w-10 animate-spin text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">Loading your budget...</p>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-10 w-10 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No Budget Yet</h3>
-                      <p className="text-muted-foreground mb-4 max-w-sm">
-                        Click &quot;Generate Budget&quot; to create a personalized AI-powered budget based on your profile, loans, and location.
-                      </p>
-                      <Button onClick={handleGenerate} disabled={generating}>
-                        {generating ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 mr-2" />
-                        )}
-                        Generate Budget
-                      </Button>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
       </div>
     </DashboardLayout>
   )

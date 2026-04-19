@@ -618,8 +618,8 @@ export default function AssetsPage() {
       {/* ──────────────────────────────────────────────
           Drill-down Sheet (AI-powered)
       ────────────────────────────────────────────── */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) fetchData() }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-6">
           {selectedAsset && (
             <>
               <SheetHeader className="mb-4">

@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react"
 interface MetricCardProps {
   title: string
   value: string
+  subtitle?: string
   change?: number
   changeLabel?: string
   icon?: LucideIcon
@@ -16,6 +17,7 @@ interface MetricCardProps {
 export function MetricCard({
   title,
   value,
+  subtitle,
   change,
   changeLabel = "vs last month",
   icon: Icon,
@@ -43,6 +45,9 @@ export function MetricCard({
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold tracking-tight">{value}</p>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
+            )}
             {change !== undefined && (
               <div className={cn("flex items-center gap-1 text-xs", getTrendColor())}>
                 {getTrendIcon()}

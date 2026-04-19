@@ -41,6 +41,7 @@ export interface BudgetOutput {
   emergency: number
   repayment: BudgetRepayment
   insights: string[]
+  is_debt_heavy?: boolean
 }
 
 export interface SpendingSummary {

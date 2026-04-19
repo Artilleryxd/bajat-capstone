@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 interface RiskIndicatorProps {
   level: "conservative" | "moderate" | "aggressive"
   expectedReturn: { min: number; max: number }
+  /** Numeric score 0–100 for precise gauge positioning. Defaults to level midpoints. */
+  score?: number
   className?: string
 }
 
@@ -33,9 +35,15 @@ const riskColors = {
 export function RiskIndicator({
   level,
   expectedReturn,
+  score,
   className,
 }: RiskIndicatorProps) {
   const config = riskColors[level]
+
+  // Position indicator based on numeric score (5%–95% range) or level default
+  const indicatorLeft = score !== undefined
+    ? `${Math.min(95, Math.max(5, score))}%`
+    : config.indicator.replace("left-[", "").replace("]", "")
 
   return (
     <Card className={cn("", className)}>
@@ -47,10 +55,8 @@ export function RiskIndicator({
         <div className="space-y-3">
           <div className="relative h-3 rounded-full bg-gradient-to-r from-success via-chart-3 to-destructive">
             <div
-              className={cn(
-                "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-4 border-background bg-foreground transition-all",
-                config.indicator
-              )}
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-4 border-background bg-foreground transition-all"
+              style={{ left: indicatorLeft }}
             />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">

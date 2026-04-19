@@ -31,6 +31,8 @@ class BudgetInput(BaseModel):
     assets: list[dict[str, Any]] = Field(default_factory=list)
 
 
+DEBT_HEAVY_EMI_RATIO = 0.40
+
 class BudgetOutput(BaseModel):
     """Strict output schema — 5 sections returned by Claude."""
 
@@ -40,6 +42,7 @@ class BudgetOutput(BaseModel):
     emergency: float
     repayment: dict[str, float]
     insights: list[str]
+    is_debt_heavy: bool = False
 
 
 def _sum_values(values: dict[str, float]) -> float:
@@ -64,6 +67,7 @@ def _normalize_to_income(
     repayment_dict: dict[str, float],
     is_renter: bool,
     rent_value: float,
+    is_debt_heavy: bool = False,
 ) -> dict[str, Any]:
     """Force final budget to stay within income while keeping repayment fixed."""
     repayment = _clean_positive_dict(repayment_dict)
@@ -72,14 +76,18 @@ def _normalize_to_income(
 
     needs = _clean_positive_dict(result.get("needs", {}) if isinstance(result.get("needs"), dict) else {})
     wants = _clean_positive_dict(result.get("wants", {}) if isinstance(result.get("wants"), dict) else {})
-    investments = _clean_positive_dict(
-        result.get("investments", {}) if isinstance(result.get("investments"), dict) else {}
-    )
 
-    try:
-        emergency = round(max(float(result.get("emergency", 0.0)), 0.0), 2)
-    except (TypeError, ValueError):
+    if is_debt_heavy:
+        investments = {}
         emergency = 0.0
+    else:
+        investments = _clean_positive_dict(
+            result.get("investments", {}) if isinstance(result.get("investments"), dict) else {}
+        )
+        try:
+            emergency = round(max(float(result.get("emergency", 0.0)), 0.0), 2)
+        except (TypeError, ValueError):
+            emergency = 0.0
 
     if is_renter and available > 0:
         # Keep rent realistic but never let it consume the entire non-EMI budget.
@@ -124,6 +132,7 @@ def _normalize_to_income(
         "emergency": emergency,
         "repayment": repayment,
         "insights": result.get("insights") if isinstance(result.get("insights"), list) else [],
+        "is_debt_heavy": is_debt_heavy,
     }
 
     non_repayment_total = (
@@ -327,6 +336,15 @@ async def _call_claude_budget_json(
 
     # ── Available income after EMI ──
     available_income = payload.income - total_emi
+    is_debt_heavy = emi_ratio >= DEBT_HEAVY_EMI_RATIO
+
+    if is_debt_heavy:
+        context_notes.append(
+            f"CRITICAL: EMI-to-income ratio is {emi_ratio:.0%} (≥40%). "
+            "This user is debt-heavy. Do NOT allocate anything to investments or emergency savings. "
+            'Set "investments" to {{}} and "emergency" to 0. '
+            "Distribute all available income only between needs and wants."
+        )
 
     prompt = f"""
 You are a personal finance assistant for India.
@@ -408,6 +426,7 @@ Output schema:
         repayment_dict=repayment_dict,
         is_renter=is_renter,
         rent_value=rent_value,
+        is_debt_heavy=is_debt_heavy,
     )
 
 
@@ -421,11 +440,18 @@ def _fallback_budget(
 ) -> dict[str, Any]:
     income = float(payload.income)
     available = max(income - total_emi, 0.0)
+    is_debt_heavy = emi_ratio >= DEBT_HEAVY_EMI_RATIO
 
-    needs_total = available * 0.50
-    wants_total = available * 0.30
-    invest_total = available * 0.15
-    emergency = round(max(available * 0.05, 0.0), 2)
+    if is_debt_heavy:
+        needs_total = available * 0.60
+        wants_total = available * 0.40
+        invest_total = 0.0
+        emergency = 0.0
+    else:
+        needs_total = available * 0.50
+        wants_total = available * 0.30
+        invest_total = available * 0.15
+        emergency = round(max(available * 0.05, 0.0), 2)
 
     housing = payload.housing_status.lower()
     is_renter = housing == "rented"
@@ -463,7 +489,9 @@ def _fallback_budget(
         wants["family_activities"] = round(wants_total * 0.05, 2)
 
     # ── Investments ──
-    if payload.income_type.lower() in ("business", "freelance"):
+    if is_debt_heavy:
+        investments = {}
+    elif payload.income_type.lower() in ("business", "freelance"):
         investments = {
             "mutual_funds": round(invest_total * 0.35, 2),
             "ppf_epf": round(invest_total * 0.20, 2),
@@ -486,10 +514,9 @@ def _fallback_budget(
     if total_emi > 0:
         insights.append(
             f"EMI-to-income ratio is {emi_ratio:.0%}. "
-            + ("Consider refinancing if possible." if emi_ratio > 0.40 else "Your EMI load is manageable.")
+            + ("Your loan burden is high — focus on repayment before investing." if is_debt_heavy else "Your EMI load is manageable.")
         )
 
-    _ = emi_ratio
     output = BudgetOutput(
         needs=needs,
         wants=wants,
@@ -497,6 +524,7 @@ def _fallback_budget(
         emergency=emergency,
         repayment=repayment_dict,
         insights=insights,
+        is_debt_heavy=is_debt_heavy,
     )
     return _normalize_to_income(
         result=output.model_dump(),
@@ -504,6 +532,7 @@ def _fallback_budget(
         repayment_dict=repayment_dict,
         is_renter=is_renter,
         rent_value=rent_value,
+        is_debt_heavy=is_debt_heavy,
     )
 
 
