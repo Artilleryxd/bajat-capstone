@@ -37,9 +37,13 @@ def generate_loan_explanation(
     optimization_mode: str = "cost_time_weighted",
     avalanche_score: float = 0.0,
     snowball_score: float = 0.0,
+    loans_info: Optional[list[dict]] = None,
 ) -> Optional[str]:
     """
-    Generate a plain-language explanation of the chosen loan repayment strategy.
+    Generate a plain-language, per-loan action plan for the chosen repayment strategy.
+
+    loans_info: list of {loan_type, lender, rate, balance, emi, closes_at_month, interest_paid}
+                sorted in payoff priority order (first to close first).
 
     Returns None on failure — callers must handle graceful degradation.
     Never raises; exceptions are caught and logged.
@@ -47,30 +51,48 @@ def generate_loan_explanation(
     invest_signal = monthly_surplus > (total_emi * 2) and highest_rate < 10.0
     refinance_signal = highest_rate > 12.0
 
-    prompt = f"""You are FinSight, a personal finance advisor. Explain the following loan repayment strategy recommendation in 3–4 concise paragraphs.
+    if loans_info:
+        steps = "\n".join(
+            f"  Step {i + 1}: {li['loan_type']}"
+            + (f" via {li['lender']}" if li.get("lender") else "")
+            + f" — {currency} {li['balance']:,.0f} at {li['rate']:.1f}% p.a."
+            + f" | EMI {currency} {li['emi']:,.0f}/mo"
+            + f" | Closes in ~{li['closes_at_month']} months"
+            + f" | Interest cost: {currency} {li['interest_paid']:,.0f}"
+            for i, li in enumerate(loans_info)
+        )
+        loan_context = f"""
+REPAYMENT PLAN (priority order — first loan to close listed first):
+{steps}
 
-Strategy chosen: {best_strategy}
-Optimization mode: {optimization_mode} (weighted for both total interest and closure time)
-Strategy score (lower is better): avalanche={avalanche_score:.4f}, snowball={snowball_score:.4f}
-Interest saved vs just paying minimum EMIs: {currency} {total_saved:,.2f}
-Months saved vs just paying minimum EMIs: {months_saved}
-Difference between avalanche and snowball interest: {currency} {interest_diff:,.2f}
-Difference between avalanche and snowball months: {months_diff}
-Highest loan interest rate: {highest_rate:.2f}%
-Monthly surplus after all EMIs: {currency} {monthly_surplus:,.2f}
-{("Note: The user has a large monthly surplus and relatively low loan rates. Briefly address whether allocating some surplus to investments might be worth considering (without naming specific instruments)." if invest_signal else "")}
-{("Note: The highest interest rate exceeds 12%. Briefly mention that refinancing at a lower rate could reduce costs, without naming specific lenders." if refinance_signal else "")}
-{("Note: The user has no monthly surplus — all income goes to EMIs. Suggest ways to create surplus (side income, expense reduction, bonus allocation) so the strategy can work effectively." if monthly_surplus == 0 else "")}
+The cascade: when each loan closes its freed EMI is redirected to the next loan, accelerating payoff.
+"""
+    else:
+        loan_context = ""
+
+    prompt = f"""You are FinSight, a personal finance advisor. Write a specific, actionable loan repayment plan in exactly 3 paragraphs.
+{loan_context}
+Strategy: {best_strategy}
+Total interest saved vs paying only minimum EMIs: {currency} {total_saved:,.0f}
+Months saved vs paying only minimum EMIs: {months_saved}
+Monthly surplus after all EMIs: {currency} {monthly_surplus:,.0f}
+Highest interest rate in portfolio: {highest_rate:.1f}%
+{("Avalanche vs snowball interest difference: " + currency + " " + f"{interest_diff:,.0f}" + f" ({months_diff} months)") if interest_diff > 0 else ""}
+{("Highest rate > 12% — a brief refinancing mention is appropriate." if refinance_signal else "")}
+{("Good surplus and sub-10% rates — briefly note what freed EMIs could do once all debt is cleared." if invest_signal else "")}
+{("No surplus — all income goes to EMIs. Suggest ways to create even a small surplus." if monthly_surplus == 0 else "")}
+
+Write exactly 3 paragraphs:
+1. WHY THIS ORDER: explain which loan is tackled first and why given its rate/balance, referencing the specific loans by type. If avalanche, explain highest-rate = most expensive. If snowball, explain smallest balance = fastest psychological win.
+2. THE CASCADE EFFECT: walk through the payoff sequence — when the first loan closes, its freed EMI boosts the next loan. Give specific months/dates where possible. Make the snowball/avalanche cascade feel concrete and exciting.
+3. THE FINISH LINE: give the total interest saved ({currency} {total_saved:,.0f}), when the user will be completely debt-free, and what those freed EMIs could accomplish financially once all debt is cleared.
 
 RULES:
-- NEVER name specific stocks, mutual funds, ETFs, lenders, or tax instruments
-- NEVER give tax advice
-- Explain clearly why this strategy was chosen over the alternative
-- Explicitly mention that strategy selection balances both cost and payoff time
-- Mention concrete numbers: interest saved, months saved, and the difference between strategies
-- If surplus is 0, explain that both strategies produce similar results without extra payments, and emphasize the importance of creating even a small surplus
-- Be encouraging and plain-language — no jargon
-- Maximum 4 paragraphs"""
+- Reference loans by type ("your Personal Loan", "the Car Loan") not generic "a loan"
+- Use specific numbers from the plan
+- Never name specific funds, banks, or tax instruments
+- No jargon — plain language, encouraging tone
+- 3–4 sentences per paragraph, no more"""
 
     try:
         client = _get_client()

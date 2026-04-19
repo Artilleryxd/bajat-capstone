@@ -50,6 +50,11 @@ def _simulate(loans: list[Loan], monthly_budget: float, strategy: str) -> dict:
     total_payment = 0.0
     months_to_close = 0
 
+    # Per-loan tracking for payoff roadmap
+    loan_interest: dict[str, float] = {l.id: 0.0 for l in sorted_loans}
+    loan_payment_total: dict[str, float] = {l.id: 0.0 for l in sorted_loans}
+    loan_closes_at: dict[str, int] = {}
+
     for month in range(1, MAX_MONTHS + 1):
         active = [l for l in sorted_loans if balances[l.id] > 0.005]
         if not active:
@@ -78,6 +83,11 @@ def _simulate(loans: list[Loan], monthly_budget: float, strategy: str) -> dict:
 
             total_interest += interest
             total_payment += payment
+            loan_interest[loan.id] = round(loan_interest[loan.id] + interest, 2)
+            loan_payment_total[loan.id] = round(loan_payment_total[loan.id] + payment, 2)
+
+            if balances[loan.id] <= 0.005 and loan.id not in loan_closes_at:
+                loan_closes_at[loan.id] = month
 
             schedule.append({
                 "month": month,
@@ -89,6 +99,20 @@ def _simulate(loans: list[Loan], monthly_budget: float, strategy: str) -> dict:
             })
 
         months_to_close = month
+
+    # Build per-loan payoff order sorted by close month
+    loan_payoff_order = sorted(
+        [
+            {
+                "loan_id": l.id,
+                "closes_at_month": loan_closes_at.get(l.id, months_to_close),
+                "total_interest_paid": loan_interest[l.id],
+                "total_payment": loan_payment_total[l.id],
+            }
+            for l in sorted_loans
+        ],
+        key=lambda x: x["closes_at_month"],
+    )
 
     # Build yearly timeline for chart (aggregates total balance at year boundaries)
     timeline: list[dict] = []
@@ -115,6 +139,7 @@ def _simulate(loans: list[Loan], monthly_budget: float, strategy: str) -> dict:
         "total_payment": round(total_payment, 2),
         "schedule": schedule,
         "timeline": timeline,
+        "loan_payoff_order": loan_payoff_order,
     }
 
 
@@ -163,8 +188,10 @@ def optimize_loans(
         raise ValueError("No loans to optimize")
 
     total_emi = sum(l.emi_amount for l in loans)
-    # Budget is at least total EMIs (can't pay less than minimums)
-    monthly_budget = max(total_emi, monthly_income)
+    # Budget is the contracted EMI total. Optimisation works via the cascade:
+    # when a loan closes its freed EMI is redirected to the next priority loan.
+    # We do NOT assume spare income is available — that belongs to savings/expenses.
+    monthly_budget = total_emi
 
     avalanche = _simulate(loans, monthly_budget, "avalanche")
     snowball = _simulate(loans, monthly_budget, "snowball")

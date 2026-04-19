@@ -13,9 +13,6 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
-  Settings,
-  HelpCircle,
-  CreditCard,
   LogOut,
   UserCircle,
 } from "lucide-react"
@@ -126,18 +123,6 @@ export function Sidebar() {
             <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer gap-2">
               <UserCircle className="w-4 h-4" />
               Profile Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer gap-2">
-              <CreditCard className="w-4 h-4" />
-              Billing
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer gap-2">
-              <HelpCircle className="w-4 h-4" />
-              Help &amp; Support
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer gap-2">
-              <Settings className="w-4 h-4" />
-              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

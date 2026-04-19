@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 import logging
 from pydantic import BaseModel
 from schemas.auth_schema import SignupRequest, LoginRequest, ForgotPasswordRequest
 from services.auth_service import AuthService
 from db.supabase_client import supabase, supabase_admin
+from utils.jwt_verifier import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,35 @@ async def forgot_password(request: ForgotPasswordRequest):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password")
+async def change_password(body: ChangePasswordRequest, user: dict = Depends(get_current_user)):
+    # Verify current password by attempting sign-in
+    try:
+        supabase.auth.sign_in_with_password({
+            "email": user["email"],
+            "password": body.current_password,
+        })
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "WRONG_PASSWORD", "message": "Current password is incorrect"},
+        )
+    # Update to new password via admin client
+    try:
+        supabase_admin.auth.admin.update_user_by_id(user["id"], {"password": body.new_password})
+        return {"message": "Password updated successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "UPDATE_FAILED", "message": str(e)},
+        )
 
 
 @router.post("/refresh")

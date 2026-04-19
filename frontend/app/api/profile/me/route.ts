@@ -32,3 +32,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  const authHeader = getAuthHeader(request)
+  if (!authHeader) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const body = await request.json()
+    const res = await fetch(`${API_BASE_URL}/v1/profile/me`, {
+      method: "PATCH",
+      headers: { Authorization: authHeader, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+
+    const data = await res.json().catch(() => ({}))
+    return NextResponse.json(data, { status: res.status })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update profile"
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}

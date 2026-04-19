@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { CurrencyProvider } from '@/lib/hooks/useCurrency'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -39,11 +40,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased" suppressHydrationWarning>
-        <CurrencyProvider>
-          {children}
-        </CurrencyProvider>
-        <Toaster richColors position="top-right" />
-        <Analytics />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <CurrencyProvider>
+            {children}
+          </CurrencyProvider>
+          <Toaster richColors position="top-right" />
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   )

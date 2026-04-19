@@ -46,6 +46,21 @@
 | Payout / Target Date    | 2030-03-01          |
 | Investment Experience   | Beginner            |
 
+## Assets
+
+| Asset Type | Name                        | Purchase Price | Current Value | Appreciation Rate | Notes                              |
+|------------|-----------------------------|---------------|---------------|-------------------|------------------------------------|
+| equity     | Zerodha Mutual Fund Portfolio | ₹1,00,000    | ₹1,50,000     | 15% p.a.          | Index funds + ELSS; active SIP     |
+| gadget     | MacBook Pro 14" (M3)        | ₹1,85,000     | ₹1,30,000     | –8% p.a.          | Primary work laptop                |
+| gadget     | iPhone 15                   | ₹79,000       | ₹55,000       | –15% p.a.         | Personal phone                     |
+| vehicle    | Honda Activa 6G             | ₹75,000       | ₹52,000       | –10% p.a.         | Daily commute within Mumbai        |
+| fd         | SBI Fixed Deposit           | ₹50,000       | ₹54,500       | 9% p.a.           | 1-year FD, matures Sep 2026        |
+
+**Total Assets: ~₹4,41,500**  
+**Net Worth (approx): ₹4,41,500 − ₹4,87,000 (loans) = −₹45,500**
+
+> Arjun is technically net-negative due to outstanding loans exceeding assets — realistic for a 26-year-old early in career.
+
 ## Expense Coverage
 
 | File                          | Period            | Transactions |

@@ -174,6 +174,26 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3">{children}</h2>
 }
 
+function PieTooltip({
+  active, payload, formatter,
+}: {
+  active?: boolean
+  payload?: Array<{ payload: { name: string; value: number; color: string } }>
+  formatter: (v: number) => string
+}) {
+  if (!active || !payload?.length) return null
+  const { name, value, color } = payload[0].payload
+  return (
+    <div className="rounded-lg border bg-card text-card-foreground shadow-lg px-3 py-2 text-xs">
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+        <span className="font-medium">{name}</span>
+      </div>
+      <p className="text-muted-foreground">{formatter(value)}</p>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -330,6 +350,12 @@ export default function DashboardPage() {
   // ── Derived values ─────────────────────────────────────────────────────────
 
   const userName = profile?.full_name?.split(" ")[0] ?? "there"
+  const greeting = (() => {
+    const h = new Date().getHours()
+    if (h < 12) return "Good morning"
+    if (h < 17) return "Good afternoon"
+    return "Good evening"
+  })()
   const monthlyIncome = profile?.monthly_income ?? null
 
   const totalLoansOutstanding = loans.length > 0
@@ -411,7 +437,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Good morning,{" "}
+              {greeting},{" "}
               <span className="text-primary">{userName}</span>
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
@@ -543,8 +569,7 @@ export default function DashboardPage() {
                             ))}
                           </Pie>
                           <RechartsTooltip
-                            formatter={(v: number) => [formatCurrency(v)]}
-                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                            content={<PieTooltip formatter={formatCurrency} />}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -640,8 +665,7 @@ export default function DashboardPage() {
                             ))}
                           </Pie>
                           <RechartsTooltip
-                            formatter={(v: number) => [formatCurrency(v)]}
-                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                            content={<PieTooltip formatter={formatCurrency} />}
                           />
                         </PieChart>
                       </ResponsiveContainer>

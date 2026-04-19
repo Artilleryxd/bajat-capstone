@@ -46,6 +46,18 @@ export interface StrategyResult {
   timeline: TimelineEntry[]
 }
 
+export interface LoanPayoffEntry {
+  loan_id: string
+  loan_type: string
+  lender: string | null
+  interest_rate: number
+  balance: number
+  emi_amount: number
+  closes_at_month: number
+  total_interest_paid: number
+  total_payment: number
+}
+
 export interface OptimizeResult {
   best_strategy: "avalanche" | "snowball"
   comparison: {
@@ -68,5 +80,6 @@ export interface OptimizeResult {
     avalanche: number
     snowball: number
   }
+  loan_payoff_order: LoanPayoffEntry[]
   ai_explanation: string
 }

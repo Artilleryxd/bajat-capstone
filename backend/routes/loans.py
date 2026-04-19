@@ -106,7 +106,41 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
             monthly_income=monthly_income,
         )
 
-        # 5. Generate AI explanation (graceful degradation on failure)
+        # 5. Build enriched payoff order (per-loan data + loan metadata)
+        best_key = result["best_strategy"]
+        raw_payoff_order = result["comparison"][best_key].get("loan_payoff_order", [])
+        loan_row_by_id = {row["id"]: row for row in loan_rows}
+
+        enriched_payoff_order = [
+            {
+                "loan_id": p["loan_id"],
+                "loan_type": loan_row_by_id.get(p["loan_id"], {}).get("loan_type", "Loan"),
+                "lender": loan_row_by_id.get(p["loan_id"], {}).get("lender"),
+                "interest_rate": float(loan_row_by_id.get(p["loan_id"], {}).get("interest_rate", 0)),
+                "balance": float(loan_row_by_id.get(p["loan_id"], {}).get("principal_outstanding", 0)),
+                "emi_amount": float(loan_row_by_id.get(p["loan_id"], {}).get("emi_amount", 0)),
+                "closes_at_month": p["closes_at_month"],
+                "total_interest_paid": p["total_interest_paid"],
+                "total_payment": p["total_payment"],
+            }
+            for p in raw_payoff_order
+        ]
+
+        # loans_info for AI — same data, shaped for the prompt
+        loans_info_for_ai = [
+            {
+                "loan_type": e["loan_type"],
+                "lender": e["lender"],
+                "rate": e["interest_rate"],
+                "balance": e["balance"],
+                "emi": e["emi_amount"],
+                "closes_at_month": e["closes_at_month"],
+                "interest_paid": e["total_interest_paid"],
+            }
+            for e in enriched_payoff_order
+        ]
+
+        # 6. Generate AI explanation (graceful degradation on failure)
         highest_rate = max(l.interest_rate for l in loans)
         ai_explanation = generate_loan_explanation(
             best_strategy=result["best_strategy"],
@@ -121,9 +155,10 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
             optimization_mode=result["optimization_basis"]["mode"],
             avalanche_score=result["strategy_scores"]["avalanche"],
             snowball_score=result["strategy_scores"]["snowball"],
+            loans_info=loans_info_for_ai,
         ) or ""
 
-        # 6. Deactivate previous strategies, insert new one
+        # 7. Deactivate previous strategies, insert new one
         supabase_admin.table("loan_strategies").update({"is_active": False}).eq(
             "user_id", user["id"]
         ).execute()
@@ -169,6 +204,7 @@ def optimize_user_loans(user: dict = Depends(get_current_user)):
             "monthly_surplus": result["monthly_surplus"],
             "optimization_basis": result["optimization_basis"],
             "strategy_scores": result["strategy_scores"],
+            "loan_payoff_order": enriched_payoff_order,
             "ai_explanation": ai_explanation,
         }
 
