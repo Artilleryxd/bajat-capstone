@@ -11,7 +11,6 @@ import {
   Scale,
   TrendingUp,
   Settings,
-  Sparkles,
 } from "lucide-react"
 
 const navItems = [
@@ -30,11 +29,8 @@ export function MobileNav() {
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
-          <Sparkles className="w-5 h-5 text-primary-foreground" />
-        </div>
-        <span className="font-semibold text-lg tracking-tight">Bajat</span>
+      <div className="flex items-center px-4 h-16 border-b border-sidebar-border">
+        <span className="font-semibold text-lg tracking-tight">FinsightAI</span>
       </div>
 
       {/* Navigation */}

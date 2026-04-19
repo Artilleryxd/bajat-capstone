@@ -2,6 +2,12 @@
 
 ---
 
+## UI Development Rule
+
+**Always invoke the `/frontend-design` skill before writing any new UI code or modifying existing components.** This applies to new pages, new components, and any non-trivial changes to existing frontend files.
+
+---
+
 ## Loan Optimisation Engine (v3 — Fixed)
 
 ### Overview

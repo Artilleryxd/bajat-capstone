@@ -72,18 +72,6 @@ function sumDict(dict: Record<string, number | undefined> | number | undefined):
   return Object.values(dict).reduce((acc: number, v) => acc + (v ?? 0), 0)
 }
 
-/** Normalize any section from old (number) or new (dict) format */
-function normalizeDict(
-  val: Record<string, number | undefined> | number | undefined
-): Record<string, number> {
-  if (typeof val === "number") return val > 0 ? { total: val } : {}
-  if (!val || typeof val !== "object") return {}
-  const result: Record<string, number> = {}
-  for (const [k, v] of Object.entries(val)) {
-    if (v !== undefined && v > 0) result[k] = v
-  }
-  return result
-}
 
 export default function BudgetPage() {
   const router = useRouter()
@@ -568,102 +556,6 @@ export default function BudgetPage() {
 
                 {/* Donut Chart with hover tooltips */}
                 <BudgetChart data={chartData} spendingSummary={spendingSummary} />
-
-                {/* Needs Breakdown */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.needs))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Needs Breakdown</CardTitle>
-                        <CardDescription>Detailed allocation within essential spending</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-
-                {/* Wants Breakdown */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.wants))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Wants Breakdown</CardTitle>
-                        <CardDescription>Detailed allocation within lifestyle spending</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-
-                {/* Investments Breakdown */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.investments))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Investments Breakdown</CardTitle>
-                        <CardDescription>How your investment allocation is distributed</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-
-                {/* Repayment Breakdown — only if loans exist */}
-                {(() => {
-                  const entries = Object.entries(normalizeDict(budget.repayment))
-                  if (entries.length === 0) return null
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Loan Repayment</CardTitle>
-                        <CardDescription>Fixed monthly EMI obligations</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {entries.map(([key, value]) => (
-                            <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                              <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-semibold">{formatCurrency(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
 
                 {/* AI Insights */}
                 <AIInsights insights={budget.insights} />

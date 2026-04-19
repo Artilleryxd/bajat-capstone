@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
@@ -11,12 +11,26 @@ import {
   Landmark,
   Scale,
   TrendingUp,
-  Settings,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
+  Settings,
+  HelpCircle,
+  CreditCard,
+  LogOut,
+  UserCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { logout, getToken } from "@/lib/auth"
+import { API_BASE_URL } from "@/lib/config"
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -25,12 +39,47 @@ const navItems = [
   { href: "/loans", icon: Landmark, label: "Loan Optimization" },
   { href: "/assets", icon: Scale, label: "Assets & Liabilities" },
   { href: "/investments", icon: TrendingUp, label: "Investment Strategy" },
-  { href: "/settings", icon: Settings, label: "Settings" },
 ]
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const [userName, setUserName] = useState("User")
+  const [userEmail, setUserEmail] = useState("")
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = getToken()
+      if (!token) return
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]))
+        if (payload.email) setUserEmail(payload.email)
+      } catch {}
+      try {
+        const res = await fetch(`${API_BASE_URL}/v1/profile/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const profile = await res.json()
+          if (profile.full_name) setUserName(profile.full_name)
+        }
+      } catch {}
+    }
+    fetchUser()
+  }, [])
+
+  const handleLogout = () => {
+    logout()
+    router.replace("/login")
+  }
+
+  const initials = userName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase()
 
   return (
     <aside
@@ -39,14 +88,67 @@ export function Sidebar() {
         collapsed ? "w-20" : "w-64"
       )}
     >
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
-          <Sparkles className="w-5 h-5 text-primary-foreground" />
-        </div>
+      {/* Header — logo + avatar */}
+      <div className="flex items-center justify-between px-4 h-16 border-b border-sidebar-border">
         {!collapsed && (
-          <span className="font-semibold text-lg tracking-tight">Bajat</span>
+          <span className="font-semibold text-lg tracking-tight truncate">FinsightAI</span>
         )}
+
+        {/* Avatar with dropdown — always visible */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "rounded-full shrink-0 hover:bg-sidebar-accent",
+                collapsed && "mx-auto"
+              )}
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium">{userName}</span>
+                <span className="text-xs font-normal text-muted-foreground truncate">
+                  {userEmail || "Loading…"}
+                </span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer gap-2">
+              <UserCircle className="w-4 h-4" />
+              Profile Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer gap-2">
+              <CreditCard className="w-4 h-4" />
+              Billing
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer gap-2">
+              <HelpCircle className="w-4 h-4" />
+              Help &amp; Support
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer gap-2">
+              <Settings className="w-4 h-4" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-destructive cursor-pointer gap-2 focus:text-destructive"
+            >
+              <LogOut className="w-4 h-4" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Navigation */}
@@ -65,7 +167,7 @@ export function Sidebar() {
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   )}
                 >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  <item.icon className="w-5 h-5 shrink-0" />
                   {!collapsed && <span>{item.label}</span>}
                 </Link>
               </li>
