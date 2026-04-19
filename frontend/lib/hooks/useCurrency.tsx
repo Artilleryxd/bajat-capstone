@@ -66,23 +66,36 @@ export function CurrencyProvider({ children, currencyCode: codeProp }: CurrencyP
 
   const value = useMemo<CurrencyContextValue>(() => {
     const currencySymbol = getCurrencySymbolFromCode(code)
+    const isINR = code === "INR"
+    const locale = isINR ? "en-IN" : "en"
 
     const formatCurrency = (amount: number | null | undefined): string => {
       if (amount == null) return ""
       try {
-        return new Intl.NumberFormat("en", {
+        return new Intl.NumberFormat(locale, {
           style: "currency",
           currency: code,
           maximumFractionDigits: 0,
         }).format(amount)
       } catch {
-        // Fallback if an invalid currency code somehow gets through
-        return `${currencySymbol}${amount.toLocaleString()}`
+        return `${currencySymbol}${amount.toLocaleString(locale)}`
       }
     }
 
     const formatCompactCurrency = (amount: number | null | undefined): string => {
       if (amount == null) return ""
+      if (isINR) {
+        const abs = Math.abs(amount)
+        const sign = amount < 0 ? "-" : ""
+        const trim = (n: number, d: number) => {
+          const s = n.toFixed(d)
+          return s.replace(/\.?0+$/, "")
+        }
+        if (abs >= 10_000_000) return `${sign}₹${trim(abs / 10_000_000, 2)}Cr`
+        if (abs >= 100_000)    return `${sign}₹${trim(abs / 100_000, 2)}L`
+        if (abs >= 1_000)      return `${sign}₹${trim(abs / 1_000, 1)}K`
+        return `${sign}₹${Math.round(abs)}`
+      }
       try {
         return new Intl.NumberFormat("en", {
           style: "currency",
@@ -135,7 +148,7 @@ export function useCurrency(): CurrencyContextValue {
             maximumFractionDigits: 1,
           }).format(amount)
         } catch {
-          return `${getCurrencySymbolFromCode("USD")}${amount.toLocaleString()}`
+          return `${getCurrencySymbolFromCode("USD")}${amount.toLocaleString("en")}`
         }
       },
     }
