@@ -39,28 +39,86 @@ For detailed guidelines, see:
 
 ### Overview
 
-Generates an AI-powered investment strategy from the user's live financial data (profile, loans, assets).  No specific funds or securities are ever recommended — only asset class percentages. The module supports temporary profile overrides for "what-if" simulations (not persisted to DB).
+Generates an AI-powered investment strategy from the user's live financial data (profile, loans, assets). No specific funds or securities are ever recommended — only asset class percentages. The module supports temporary profile overrides for "what-if" simulations (not persisted to DB).
 
 ### Key behaviours
 
 - **Risk score** is calculated deterministically (TRD §10.3): age, income type, dependents, DTI, net worth, investment experience.
 - **Debt-heavy check**: DTI ≥ 40% → `is_debt_heavy = true` → prominent warning card + conservative allocation.
-- **First-time flow**: no `investment_strategies` row → frontend shows goal setup form (goal amount, current portfolio value, SIP date, optional portfolio description/upload).
+- **First-time flow**: `GET /v1/investment/latest` checks `investment_strategies` table first. If an active row exists it is returned immediately. Only if no row exists does it fall through to check `user_profiles.investment_goal`. No goal → 404 → frontend shows goal setup form (goal amount, current portfolio value, SIP date, payout_date). This ordering means unapplied profile-column migrations never block the strategy view.
 - **Temporary overrides**: `POST /v1/investment/strategy` with `overrides` field → strategy is generated but NOT saved to DB → frontend shows "Simulated view" banner.
 - **Portfolio upload**: PDF/CSV/XLSX/image → `POST /v1/investment/parse-portfolio` → returns `portfolio_text` + `estimated_return_pct`.
+- **SIP alignment with budget**: `recommended_sip` = investment total from the user's latest budget row. `required_sip_for_goal` = deterministic goal-math (what is needed to hit goal by payout_date). A callout banner on the investments page shows green (on track) or amber (short by X/month). The AI insight paragraph 3 always addresses goal reachability explicitly.
+- **Budget debt-heavy mode**: EMI-to-income ≥ 40% → budget AI is instructed to allocate nothing to investments/emergency; `is_debt_heavy = true` is returned in `BudgetOutput`; frontend shows a destructive warning banner and hides investment/emergency sections.
+
+### DB columns — `investment_strategies`
+
+All columns (create table query in `backend/db/migrations/004_investment_strategies.sql` superseded by later migrations):
+
+| Column | Type | Added by |
+|--------|------|----------|
+| id, user_id, risk_score, risk_profile, allocations, investable_surplus, ai_rationale, risk_explanation, ai_insights, debt_warning, is_debt_heavy, goal_amount, current_portfolio_value, sip_date, portfolio_text, goal_projection, estimated_annual_return, time_horizon, is_active, created_at | various | 004 |
+| payout_date | DATE | 012 |
+| recommended_sip, required_sip_for_goal | NUMERIC(12,2) | 013 |
+| target_goal | TEXT | 014 |
+
+### DB columns — `user_profiles` (investment-related)
+
+| Column | Type | Added by |
+|--------|------|----------|
+| investment_goal | NUMERIC(15,2) | 011 |
+| current_portfolio | NUMERIC(15,2) | 011 |
+| sip_date | SMALLINT | 011 |
+| payout_date | DATE | 012 |
+| target_goal | TEXT | 014 |
+
+### Pending migrations (apply in order if not yet run)
+
+```
+backend/db/apply_migration_011.py   → user_profiles investment fields + pg_cron SIP job
+backend/db/apply_migration_012.py   → payout_date on user_profiles + investment_strategies
+backend/db/apply_migration_013.py   → recommended_sip + required_sip_for_goal on investment_strategies
+backend/db/migrations/014_investment_target_goal.sql  → target_goal on both tables (run via Supabase SQL editor)
+```
 
 ### Key Files
 
 | File | Role |
 |------|------|
 | `backend/api/investments.py` | Routes: GET /v1/investment/latest, POST /v1/investment/strategy, POST /v1/investment/parse-portfolio |
-| `backend/services/investment_service.py` | Risk score calc, debt check, goal projection math, DB persistence, orchestration |
-| `backend/services/ai_service.py` | `generate_investment_strategy_ai()` + `parse_portfolio_from_text()` |
-| `backend/schemas/investment_schema.py` | Pydantic models: GenerateStrategyRequest, InvestmentStrategyResponse, etc. |
-| `backend/db/migrations/004_investment_strategies.sql` | DDL + RLS for investment_strategies table |
-| `frontend/app/investments/page.tsx` | Full page: first-time setup, strategy view, override simulation |
-| `frontend/lib/types/investment.ts` | TypeScript types |
+| `backend/services/investment_service.py` | Risk score, debt check, goal projection, budget SIP fetch, DB persistence, orchestration |
+| `backend/services/ai_service.py` | `generate_investment_strategy_ai()` (accepts `budget_investment_allocation`, `payout_date`) + `parse_portfolio_from_text()` |
+| `backend/schemas/investment_schema.py` | Pydantic models: `InvestmentStrategyResponse` (includes `recommended_sip`, `required_sip_for_goal`) |
+| `backend/db/migrations/004_investment_strategies.sql` | Original DDL + RLS |
+| `frontend/app/investments/page.tsx` | Full page: first-time setup, strategy view, SIP gap callout, override simulation |
+| `frontend/lib/types/investment.ts` | TypeScript types (includes `recommended_sip`, `required_sip_for_goal`) |
 | `frontend/app/api/investments/*/route.ts` | Next.js proxies for all 3 endpoints |
+| `frontend/components/dashboard/metric-card.tsx` | MetricCard — now accepts optional `subtitle` prop |
+
+---
+
+## Assets & Net Worth Module
+
+### Overview
+
+Tracks user's physical and financial assets (real estate, vehicles, gold, equity, FD, gadgets) and liabilities (loans). AI provides real-time valuations and 5-year projections via Claude Sonnet on each drilldown.
+
+### Key behaviours
+
+- **Asset list value**: Uses `current_value` stored in `user_assets` DB row. Set by AI at add time and refreshed on every drilldown.
+- **Drilldown value**: `GET /v1/assets/{asset_id}/drilldown` calls `ai_project_asset()` (Claude Sonnet) for a fresh estimate, then **immediately persists** `current_value` + `appreciation_rate` back to `user_assets` so list and drilldown always show the same number.
+- **Frontend refresh**: When the drilldown sheet closes, `fetchData()` is called to reload the asset list with the newly persisted value.
+- **Net worth**: Exact (sum of DB values) + AI approximate (Sonnet estimate) shown side by side.
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `backend/routes/assets.py` | All asset/liability/networth routes; drilldown persists AI value back to DB |
+| `backend/services/asset_service.py` | `add_asset`, `ai_project_asset`, `refresh_asset_value`, `get_asset_by_id` |
+| `backend/services/networth_service.py` | `get_net_worth_summary`, `get_net_worth_timeline` |
+| `frontend/app/assets/page.tsx` | Full page: list, drilldown sheet, add modal, net worth cards; refreshes on sheet close |
+| `frontend/lib/types/asset.ts` | TypeScript types: `Asset`, `DrilldownData`, `NetWorthSummary` |
 
 ---
 

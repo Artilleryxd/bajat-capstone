@@ -23,11 +23,14 @@ export interface InvestmentStrategyResponse {
   debt_warning: string | null
   allocations: AllocationItem[]
   investable_surplus: number
+  recommended_sip: number | null       // budget-derived: what the budget allocates to investments
+  required_sip_for_goal: number | null  // goal-derived: what is needed to hit the goal on time
   ai_insights: string
   goal_projection: GoalProjection | null
   goal_amount: number | null
   current_portfolio_value: number | null
   sip_date: number | null
+  payout_date: string | null
   estimated_annual_return: number | null
   time_horizon: string | null
   is_using_overrides: boolean
@@ -44,6 +47,7 @@ export interface InvestmentGoal {
   goal_amount: number
   current_portfolio_value: number
   sip_date: number
+  payout_date?: string
   portfolio_text?: string
 }
 

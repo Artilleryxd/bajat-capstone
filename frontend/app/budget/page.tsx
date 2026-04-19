@@ -16,6 +16,7 @@ import {
   Lock,
   MessageCircle,
   Info,
+  AlertTriangle,
 } from "lucide-react"
 
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
@@ -537,6 +538,19 @@ export default function BudgetPage() {
           <div className="lg:col-span-2 space-y-6">
             {budget ? (
               <>
+                {/* Debt-heavy warning */}
+                {budget.is_debt_heavy && (
+                  <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-destructive text-sm">High Loan Burden Detected</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Your EMIs consume 40 %+ of your income. Investments and emergency savings have been paused — focus on clearing your loans first.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Summary Cards — only show sections with amount > 0 */}
                 <div className={`grid gap-4 sm:grid-cols-2 ${sectionCards.length >= 5 ? "lg:grid-cols-5" : sectionCards.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
                   {sectionCards.map((card) => (

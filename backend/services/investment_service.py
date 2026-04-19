@@ -114,6 +114,48 @@ def calculate_investable_surplus(
     return max(0.0, round(surplus, 2))
 
 
+_HORIZON_YEARS: dict[str, int] = {
+    "short": 3,
+    "medium": 7,
+    "long": 15,
+    "retirement": 25,
+}
+
+
+def calculate_recommended_sip(
+    goal_amount: Optional[float],
+    current_portfolio_value: float,
+    annual_return_pct: float,
+    time_horizon: str,
+    monthly_income: float,
+) -> float:
+    """
+    Required monthly SIP to reach goal within the time horizon.
+    Falls back to 15 % of income when no goal is set.
+    """
+    years = _HORIZON_YEARS.get(time_horizon or "medium", 7)
+
+    if not goal_amount or goal_amount <= 0:
+        return round(monthly_income * 0.15, 2)
+
+    r = annual_return_pct / 100.0
+    monthly_r = (1 + r) ** (1 / 12) - 1
+    N = years * 12
+
+    fv_portfolio = (current_portfolio_value or 0.0) * (1 + r) ** years
+    fv_needed = max(goal_amount - fv_portfolio, 0.0)
+
+    if fv_needed <= 0:
+        return 0.0
+
+    if monthly_r > 0:
+        sip = fv_needed * monthly_r / ((1 + monthly_r) ** N - 1)
+    else:
+        sip = fv_needed / N
+
+    return round(max(sip, 0.0), 2)
+
+
 def calculate_goal_projection(
     current_value: float,
     monthly_sip: float,
@@ -183,11 +225,14 @@ def _row_to_response(row: dict, is_using_overrides: bool = False) -> InvestmentS
         debt_warning=row.get("debt_warning"),
         allocations=allocs,
         investable_surplus=float(row.get("investable_surplus") or 0),
+        recommended_sip=float(row["recommended_sip"]) if row.get("recommended_sip") is not None else None,
+        required_sip_for_goal=float(row["required_sip_for_goal"]) if row.get("required_sip_for_goal") is not None else None,
         ai_insights=row.get("ai_insights") or "",
         goal_projection=gp,
         goal_amount=row.get("goal_amount"),
         current_portfolio_value=row.get("current_portfolio_value"),
         sip_date=row.get("sip_date"),
+        payout_date=str(row["payout_date"]) if row.get("payout_date") else None,
         estimated_annual_return=row.get("estimated_annual_return"),
         time_horizon=row.get("time_horizon"),
         is_using_overrides=is_using_overrides,
@@ -276,6 +321,7 @@ def generate_strategy(
     goal_amount = goal.goal_amount if goal else None
     current_portfolio_value = goal.current_portfolio_value if goal else None
     sip_date = goal.sip_date if goal else None
+    payout_date = goal.payout_date if goal else None
     portfolio_text = goal.portfolio_text if goal else None
 
     # If no new goal provided but strategy exists in DB, reuse stored goal data
@@ -285,9 +331,31 @@ def generate_strategy(
             goal_amount = existing.get("goal_amount")
             current_portfolio_value = existing.get("current_portfolio_value")
             sip_date = existing.get("sip_date")
+            payout_date = existing.get("payout_date")
             portfolio_text = existing.get("portfolio_text")
 
-    # ── 5. AI call ──────────────────────────────────────────────────────────
+    # ── 5. Budget investment allocation (fetch before AI call) ──────────────
+    budget_investment_allocation: Optional[float] = None
+    try:
+        budget_res = (
+            supabase_admin.table("budgets")
+            .select("generated_budget")
+            .eq("user_id", user_id)
+            .eq("is_temporary", False)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if budget_res.data:
+            gb = budget_res.data[0].get("generated_budget") or {}
+            inv = gb.get("investments") or {}
+            if isinstance(inv, dict):
+                total = sum(float(v) for v in inv.values() if v)
+                budget_investment_allocation = round(total, 2) if total > 0 else None
+    except Exception as e:
+        logger.warning("Could not fetch budget for SIP alignment: %s", e)
+
+    # ── 6. AI call ──────────────────────────────────────────────────────────
     ai_result = generate_investment_strategy_ai(
         risk_score=risk_score,
         risk_profile=risk_profile_label,
@@ -305,6 +373,8 @@ def generate_strategy(
         goal_amount=goal_amount,
         current_portfolio_value=current_portfolio_value,
         portfolio_text=portfolio_text,
+        budget_investment_allocation=budget_investment_allocation,
+        payout_date=payout_date,
     )
 
     # Fallback allocations if AI fails
@@ -317,7 +387,17 @@ def generate_strategy(
     debt_warning = ai_result.get("debt_warning") if is_debt_heavy else None
     estimated_return = ai_result.get("estimated_annual_return", 10.0)
 
-    # ── 6. Goal projection ──────────────────────────────────────────────────
+    # ── 7. SIP calculations ─────────────────────────────────────────────────
+    required_sip_for_goal = calculate_recommended_sip(
+        goal_amount=goal_amount,
+        current_portfolio_value=current_portfolio_value or 0.0,
+        annual_return_pct=estimated_return,
+        time_horizon=time_horizon,
+        monthly_income=monthly_income,
+    )
+    recommended_sip = budget_investment_allocation if budget_investment_allocation is not None else required_sip_for_goal
+
+    # ── 8. Goal projection ──────────────────────────────────────────────────
     goal_projection: Optional[GoalProjection] = None
     if goal_amount and goal_amount > 0:
         portfolio_return = estimated_return
@@ -333,23 +413,25 @@ def generate_strategy(
             goal_amount=goal_amount,
         )
 
-    # ── 7. Persist ──────────────────────────────────────────────────────────
+    # ── 9. Persist ──────────────────────────────────────────────────────────
     row_id: Optional[str] = None
     created_at: Optional[str] = None
 
     if save_to_db:
+        # ── Insert strategy row ─────────────────────────────────────────────
         try:
-            # Deactivate previous strategies
             supabase_admin.table("investment_strategies").update({"is_active": False}).eq(
                 "user_id", user_id
             ).execute()
 
-            insert_data = {
+            insert_data: dict = {
                 "user_id": user_id,
                 "risk_score": risk_score,
                 "risk_profile": risk_profile_label,
                 "allocations": [a.model_dump() for a in allocations],
                 "investable_surplus": investable_surplus,
+                "recommended_sip": recommended_sip,
+                "required_sip_for_goal": required_sip_for_goal,
                 "risk_explanation": risk_explanation,
                 "ai_insights": ai_insights,
                 "ai_rationale": ai_insights,
@@ -364,12 +446,44 @@ def generate_strategy(
                 "time_horizon": time_horizon,
                 "is_active": True,
             }
+            # payout_date column added by migration 012 — include only if set
+            if payout_date is not None:
+                insert_data["payout_date"] = payout_date
+
             ins_res = supabase_admin.table("investment_strategies").insert(insert_data).execute()
             if ins_res.data:
                 row_id = ins_res.data[0].get("id")
                 created_at = str(ins_res.data[0].get("created_at", ""))
         except Exception as e:
-            logger.error("Failed to persist investment strategy for %s: %s", user_id, e)
+            logger.error("Failed to insert investment strategy for %s: %s", user_id, e)
+
+        # ── Sync goal fields to user_profiles (independent of strategy insert) ──
+        try:
+            profile_update: dict = {}
+            if goal_amount is not None:
+                profile_update["investment_goal"] = goal_amount
+            if current_portfolio_value is not None:
+                profile_update["current_portfolio"] = current_portfolio_value
+            if sip_date is not None:
+                profile_update["sip_date"] = sip_date
+            if payout_date is not None:
+                profile_update["payout_date"] = payout_date
+            if profile_update:
+                supabase_admin.table("user_profiles").update(profile_update).eq(
+                    "id", user_id
+                ).execute()
+        except Exception as e:
+            logger.error("Failed to sync investment goal to user_profiles for %s: %s", user_id, e)
+            # Retry without payout_date in case migration 012 is not yet applied
+            try:
+                profile_update.pop("payout_date", None)
+                if profile_update:
+                    supabase_admin.table("user_profiles").update(profile_update).eq(
+                        "id", user_id
+                    ).execute()
+                    logger.info("Synced investment goal (without payout_date) for %s", user_id)
+            except Exception as e2:
+                logger.error("Retry sync also failed for %s: %s", user_id, e2)
 
     return InvestmentStrategyResponse(
         id=row_id,
@@ -380,11 +494,14 @@ def generate_strategy(
         debt_warning=debt_warning,
         allocations=allocations,
         investable_surplus=investable_surplus,
+        recommended_sip=recommended_sip,
+        required_sip_for_goal=required_sip_for_goal,
         ai_insights=ai_insights,
         goal_projection=goal_projection,
         goal_amount=goal_amount,
         current_portfolio_value=current_portfolio_value,
         sip_date=sip_date,
+        payout_date=payout_date,
         estimated_annual_return=estimated_return,
         time_horizon=time_horizon,
         is_using_overrides=is_using_overrides,

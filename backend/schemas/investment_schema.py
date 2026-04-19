@@ -14,6 +14,7 @@ class InvestmentGoal(BaseModel):
     goal_amount: float = Field(gt=0)
     current_portfolio_value: float = Field(ge=0)
     sip_date: int = Field(ge=1, le=28, description="Day of month for SIP")
+    payout_date: Optional[str] = None      # ISO date string: target date to reach goal
     portfolio_text: Optional[str] = None   # free-text description of current holdings
 
 
@@ -47,11 +48,14 @@ class InvestmentStrategyResponse(BaseModel):
     debt_warning: Optional[str] = None
     allocations: list[AllocationItem]
     investable_surplus: float
+    recommended_sip: Optional[float] = None       # budget-derived: what the user can invest
+    required_sip_for_goal: Optional[float] = None  # goal-derived: what is needed to hit the goal on time
     ai_insights: str
     goal_projection: Optional[GoalProjection] = None
     goal_amount: Optional[float] = None
     current_portfolio_value: Optional[float] = None
     sip_date: Optional[int] = None
+    payout_date: Optional[str] = None
     estimated_annual_return: Optional[float] = None
     time_horizon: Optional[str] = None
     is_using_overrides: bool = False

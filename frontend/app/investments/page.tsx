@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -30,7 +30,6 @@ import {
   X,
   Info,
   RotateCcw,
-  Upload,
   Loader2,
 } from "lucide-react"
 import { useCurrency } from "@/lib/hooks/useCurrency"
@@ -131,9 +130,7 @@ export default function InvestmentsPage() {
   const [goalAmount, setGoalAmount] = useState("")
   const [portfolioValue, setPortfolioValue] = useState("")
   const [sipDate, setSipDate] = useState("1")
-  const [portfolioText, setPortfolioText] = useState("")
-  const [isParsingFile, setIsParsingFile] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [payoutDate, setPayoutDate] = useState("")
 
   // ── fetch on mount ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -180,7 +177,7 @@ export default function InvestmentsPage() {
           goal_amount: parseFloat(goalAmount),
           current_portfolio_value: parseFloat(portfolioValue) || 0,
           sip_date: parseInt(sipDate) || 1,
-          portfolio_text: portfolioText || undefined,
+          payout_date: payoutDate || undefined,
         }
       } else if (strategy?.goal_amount) {
         // Keep existing goal data when regenerating
@@ -188,7 +185,7 @@ export default function InvestmentsPage() {
           goal_amount: strategy.goal_amount,
           current_portfolio_value: strategy.current_portfolio_value ?? 0,
           sip_date: strategy.sip_date ?? 1,
-          portfolio_text: portfolioText || undefined,
+          payout_date: strategy.payout_date ?? undefined,
         }
       }
 
@@ -223,30 +220,6 @@ export default function InvestmentsPage() {
       setError(e.message || "Something went wrong. Please try again.")
     } finally {
       setIsGenerating(false)
-    }
-  }
-
-  // ── portfolio file upload ───────────────────────────────────────────────
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setIsParsingFile(true)
-    try {
-      const form = new FormData()
-      form.append("file", file)
-      const res = await fetchWithAuth("/api/investments/parse-portfolio", {
-        method: "POST",
-        body: form,
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.portfolio_text) setPortfolioText(data.portfolio_text)
-      }
-    } catch {
-      // silent — user can still type manually
-    } finally {
-      setIsParsingFile(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }
 
@@ -348,47 +321,17 @@ export default function InvestmentsPage() {
                     onChange={(e) => setSipDate(e.target.value)}
                   />
                 </div>
-              </div>
 
-              {/* Portfolio description */}
-              <div className="space-y-2">
-                <Label htmlFor="portfolioText">
-                  Current Portfolio Description{" "}
-                  <span className="text-muted-foreground font-normal">(optional)</span>
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Describe what you currently hold (e.g. "60% equity mutual funds, 30% FD, 10% gold").
-                  This helps estimate your current portfolio return.
-                </p>
-                <textarea
-                  id="portfolioText"
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder="e.g. 50% in large cap equity funds, 30% in PPF, 20% in gold ETF..."
-                  value={portfolioText}
-                  onChange={(e) => setPortfolioText(e.target.value)}
-                />
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isParsingFile}
-                  >
-                    {isParsingFile ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                    ) : (
-                      <Upload className="h-3.5 w-3.5 mr-1.5" />
-                    )}
-                    Upload Statement
-                  </Button>
-                  <span className="text-xs text-muted-foreground">PDF, CSV, XLSX, or image</span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.csv,.xlsx,.xls,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={handleFileUpload}
+                <div className="space-y-2">
+                  <Label htmlFor="payoutDate">Goal Target Date</Label>
+                  <Input
+                    id="payoutDate"
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={payoutDate}
+                    onChange={(e) => setPayoutDate(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">When do you want to reach your investment goal?</p>
                 </div>
               </div>
 
@@ -463,7 +406,8 @@ export default function InvestmentsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Monthly SIP"
-            value={formatCurrency(s.investable_surplus)}
+            value={formatCurrency(s.recommended_sip ?? s.investable_surplus)}
+            subtitle={s.recommended_sip != null ? "From your budget" : "Estimated surplus"}
             icon={PiggyBank}
             iconColor="bg-primary/10 text-primary"
           />
@@ -490,6 +434,34 @@ export default function InvestmentsPage() {
             iconColor="bg-chart-2/10 text-chart-2"
           />
         </div>
+
+        {/* SIP gap callout */}
+        {(() => {
+          const budgetSip = s.recommended_sip
+          const requiredSip = s.required_sip_for_goal
+          if (!budgetSip || !requiredSip || !s.goal_amount) return null
+          const gap = requiredSip - budgetSip
+          if (gap <= 0) {
+            return (
+              <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3 text-sm">
+                <TrendingUp className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                <p className="text-success">
+                  Your budget SIP of <strong>{formatCurrency(budgetSip)}/month</strong> is on track to reach your goal. Keep it up.
+                </p>
+              </div>
+            )
+          }
+          return (
+            <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
+              <Info className="h-4 w-4 text-warning-foreground shrink-0 mt-0.5" />
+              <p className="text-warning-foreground">
+                Your budget allocates <strong>{formatCurrency(budgetSip)}/month</strong> to investments, but you need{" "}
+                <strong>{formatCurrency(requiredSip)}/month</strong> to reach your goal on time.{" "}
+                You're <strong>{formatCurrency(gap)}/month short</strong> — see AI Insights below for suggestions.
+              </p>
+            </div>
+          )
+        })()}
 
         {/* Profile card + Risk card */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -597,9 +569,15 @@ export default function InvestmentsPage() {
                 /* View mode */
                 <dl className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Monthly Surplus</dt>
-                    <dd className="font-semibold">{formatCurrency(s.investable_surplus)}</dd>
+                    <dt className="text-muted-foreground">Budget SIP</dt>
+                    <dd className="font-semibold">{formatCurrency(s.recommended_sip ?? s.investable_surplus)}</dd>
                   </div>
+                  {s.required_sip_for_goal != null && s.recommended_sip != null && s.required_sip_for_goal > s.recommended_sip && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Required SIP</dt>
+                      <dd className="font-semibold text-warning-foreground">{formatCurrency(s.required_sip_for_goal)}</dd>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Time Horizon</dt>
                     <dd className="font-semibold">
@@ -610,6 +588,12 @@ export default function InvestmentsPage() {
                     <dt className="text-muted-foreground">SIP Date</dt>
                     <dd className="font-semibold">
                       {s.sip_date ? `${s.sip_date}${s.sip_date === 1 ? "st" : s.sip_date === 2 ? "nd" : s.sip_date === 3 ? "rd" : "th"} of month` : "—"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Goal Target Date</dt>
+                    <dd className="font-semibold">
+                      {s.payout_date ? new Date(s.payout_date).toLocaleDateString("en-IN", { year: "numeric", month: "short" }) : "—"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
@@ -659,7 +643,7 @@ export default function InvestmentsPage() {
                 Goal Projection
               </CardTitle>
               <CardDescription>
-                Based on {formatCurrency(s.investable_surplus)}/month SIP at ~{s.estimated_annual_return ?? s.goal_projection.expected_return_pct}% p.a.
+                Based on {formatCurrency(s.recommended_sip ?? s.investable_surplus)}/month SIP at ~{s.estimated_annual_return ?? s.goal_projection.expected_return_pct}% p.a.
               </CardDescription>
             </CardHeader>
             <CardContent>

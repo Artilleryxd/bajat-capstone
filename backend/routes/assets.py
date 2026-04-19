@@ -9,6 +9,7 @@ from schemas.asset_schema import (
     LiabilityAddRequest,
 )
 from services.ai_categorizer import classify_financial_item
+from db.supabase_client import supabase_admin
 from services.asset_service import (
     add_asset,
     get_all_assets,
@@ -224,6 +225,15 @@ async def asset_drilldown_route(
         # AI-powered valuation + 5-year projection via Claude Sonnet
         ai_proj = await ai_project_asset(asset)
         current_value = ai_proj["current_value"]
+
+        # Persist AI-estimated value back to DB so list stays in sync
+        try:
+            supabase_admin.table("user_assets").update({
+                "current_value": round(current_value, 2),
+                "appreciation_rate": ai_proj.get("annual_rate", float(asset.get("appreciation_rate", 0) or 0)),
+            }).eq("id", asset_id).eq("user_id", user["id"]).execute()
+        except Exception as upd_err:
+            logger.warning("Could not persist drilldown value for asset %s: %s", asset_id, upd_err)
 
         # Appreciation vs purchase price
         if purchase_price > 0:

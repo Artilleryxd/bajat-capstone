@@ -5,7 +5,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 
-from schemas.investment_schema import GenerateStrategyRequest, InvestmentStrategyResponse
+from db.supabase_client import supabase_admin
+from schemas.investment_schema import GenerateStrategyRequest, InvestmentGoal, InvestmentStrategyResponse
 from services.investment_service import generate_strategy, get_latest_strategy, _row_to_response
 from services.ai_service import parse_portfolio_from_text
 from utils.jwt_verifier import get_current_user
@@ -17,14 +18,66 @@ router = APIRouter(prefix="/v1/investment", tags=["investment"])
 
 @router.get("/latest", response_model=InvestmentStrategyResponse)
 def get_latest(user: dict = Depends(get_current_user)):
-    """Return the most recent active investment strategy for the user."""
+    """
+    Return the active investment strategy for the user.
+    Check order:
+      1. Active strategy row exists → return it immediately (no profile columns needed).
+      2. No strategy but investment_goal in user_profiles → auto-generate.
+      3. Nothing → 404 (frontend shows first-time form).
+    """
+    # ── 1. Check investment_strategies first ───────────────────────────────
+    # This bypasses any user_profiles column dependency entirely when a
+    # strategy already exists, so unapplied migrations never block the page.
     row = get_latest_strategy(user["id"])
-    if not row:
+    if row:
+        return _row_to_response(row)
+
+    # ── 2. No strategy yet — check if goal data is stored in user_profiles ─
+    profile: dict = {}
+    try:
+        profile_res = (
+            supabase_admin.table("user_profiles")
+            .select("investment_goal, current_portfolio, sip_date, payout_date, target_goal")
+            .eq("id", user["id"])
+            .execute()
+        )
+        profile = profile_res.data[0] if profile_res.data else {}
+    except Exception:
+        try:
+            # Fallback: select only columns guaranteed to exist (pre-011/012 DB)
+            profile_res = (
+                supabase_admin.table("user_profiles")
+                .select("investment_goal, current_portfolio, sip_date")
+                .eq("id", user["id"])
+                .execute()
+            )
+            profile = profile_res.data[0] if profile_res.data else {}
+        except Exception as e:
+            logger.warning("Could not read user_profiles goal fields for %s: %s", user["id"], e)
+
+    if not profile.get("investment_goal"):
         raise HTTPException(
             status_code=404,
-            detail={"code": "NO_STRATEGY", "message": "No investment strategy found. Generate one first."},
+            detail={"code": "NO_GOAL", "message": "No investment goal set. Complete the setup first."},
         )
-    return _row_to_response(row)
+
+    # ── 3. Goal is set but no strategy yet — auto-generate ─────────────────
+    try:
+        request = GenerateStrategyRequest(
+            goal=InvestmentGoal(
+                goal_amount=float(profile["investment_goal"]),
+                current_portfolio_value=float(profile.get("current_portfolio") or 0),
+                sip_date=int(profile.get("sip_date") or 1),
+                payout_date=str(profile["payout_date"]) if profile.get("payout_date") else None,
+            )
+        )
+        return generate_strategy(user["id"], request, save_to_db=True)
+    except Exception as e:
+        logger.error("Auto-generate strategy failed for %s: %s", user["id"], e)
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "GENERATE_FAILED", "message": "Failed to generate strategy. Please try again."},
+        )
 
 
 @router.post("/strategy", response_model=InvestmentStrategyResponse)

@@ -102,6 +102,8 @@ def generate_investment_strategy_ai(
     goal_amount: Optional[float],
     current_portfolio_value: Optional[float],
     portfolio_text: Optional[str],
+    budget_investment_allocation: Optional[float] = None,
+    payout_date: Optional[str] = None,
 ) -> Optional[dict]:
     """
     Generate investment strategy allocations, risk explanation, and AI insights.
@@ -117,6 +119,20 @@ def generate_investment_strategy_ai(
         goal_section = f"- Investment Goal: {currency} {goal_amount:,.0f}\n"
         if current_portfolio_value:
             goal_section += f"- Current Portfolio Value: {currency} {current_portfolio_value:,.0f}\n"
+        if payout_date:
+            goal_section += f"- Target Date to Reach Goal: {payout_date}\n"
+
+    budget_sip_display = f"{currency} {budget_investment_allocation:,.0f}" if budget_investment_allocation else "not yet set"
+    goal_display = f"{currency} {goal_amount:,.0f}" if goal_amount else "not set"
+    target_date_display = payout_date or "no target date set"
+
+    budget_sip_section = ""
+    if budget_investment_allocation is not None:
+        budget_sip_section = (
+            f"\nBUDGET-DERIVED SIP:\n"
+            f"- The user's AI-generated monthly budget allocates {currency} {budget_investment_allocation:,.0f} to investments.\n"
+            f"- This is the actual amount the user can invest each month based on their income and expenses.\n"
+        )
 
     portfolio_section = ""
     if portfolio_text:
@@ -153,7 +169,7 @@ USER PROFILE:
 - Investment Time Horizon: {horizon_label}
 - Total Monthly EMI: {currency} {total_emi:,.0f}
 - Debt-to-Income Ratio: {dti_ratio:.0%}
-{goal_section}{portfolio_section}
+{goal_section}{budget_sip_section}{portfolio_section}
 {debt_note}
 
 Return ONLY a valid JSON object — no markdown fences, no commentary outside the JSON.
@@ -169,7 +185,7 @@ Use this exact structure:
       "rationale": "One sentence rationale."
     }}
   ],
-  "ai_insights": "3–4 plain-English paragraphs covering: (1) overall strategy summary, (2) how the allocation fits the user's life stage and goals, (3) what the user should do next month concretely, (4) one risk or caveat to watch.",
+  "ai_insights": "4–5 plain-English paragraphs: (1) overall strategy summary, (2) how the allocation fits the user's life stage and goals, (3) GOAL REACHABILITY — if a goal and target date are given, explicitly state whether the budget SIP of {budget_sip_display} per month is sufficient to reach the goal of {goal_display} by {target_date_display} — if not, state exactly how much more is needed and suggest concrete steps (cut wants, increase income, extend timeline), (4) what the user should do next month concretely, (5) one risk or caveat to watch.",
   "debt_warning": "2–3 sentences explaining the user should close high-interest loans before investing aggressively — or null if not debt-heavy.",
   "estimated_annual_return": 10.5
 }}
