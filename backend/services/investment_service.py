@@ -406,9 +406,11 @@ def generate_strategy(
             if pr:
                 portfolio_return = pr
         cv = current_portfolio_value or 0.0
+        # Projections must reflect what the user is actually allocating monthly.
+        projection_monthly_sip = recommended_sip if recommended_sip is not None else investable_surplus
         goal_projection = calculate_goal_projection(
             current_value=cv,
-            monthly_sip=investable_surplus,
+            monthly_sip=projection_monthly_sip,
             annual_return_pct=portfolio_return,
             goal_amount=goal_amount,
         )

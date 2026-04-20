@@ -154,6 +154,7 @@ def generate_investment_strategy_ai(
             f"\nBUDGET-DERIVED SIP:\n"
             f"- The user's AI-generated monthly budget allocates {currency} {budget_investment_allocation:,.0f} to investments.\n"
             f"- This is the actual amount the user can invest each month based on their income and expenses.\n"
+            f"- For any goal timeline/reachability statement, treat this amount as the monthly SIP in use.\n"
         )
 
     portfolio_section = ""
@@ -229,6 +230,9 @@ STRICT RULES:
 - estimated_annual_return should reflect the weighted expected return of the recommended portfolio
 - ai_insights must be plain English paragraphs — no bullet points, no headers
 - If investable_surplus is 0 or negative, acknowledge that fact and recommend building surplus before investing"""
+
+    if budget_investment_allocation is not None:
+        prompt += "\n- When budget SIP is provided, do NOT use investable_surplus to claim goal timelines; use the budget SIP amount for goal reachability statements."
 
     try:
         import json as _json
